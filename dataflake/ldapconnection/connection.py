@@ -43,7 +43,6 @@ class LDAPConnection(object):
                   logger = None,
                 ):
         """ Create a new LDAPDelegate instance """
-        self._hash = 'ldap_delegate%s' % str(random.random())
         self.login_attr = login_attr
         self.rdn_attr = rdn_attr
         self.bind_dn = bind_dn
