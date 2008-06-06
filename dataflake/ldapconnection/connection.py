@@ -28,18 +28,13 @@ from dataflake.ldapconnection.sharedresource import getResource
 from dataflake.ldapconnection.sharedresource import setResource
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import from_utf8
-from dataflake.ldapconnection.utils import registerDelegate
 from dataflake.ldapconnection.utils import to_utf8
 
 try:
     c_factory = ldap.ldapobject.ReconnectLDAPObject
 except AttributeError:
     c_factory = ldap.ldapobject.SimpleLDAPObject
-logger = logging.getLogger('event.LDAPDelegate')
-
-
-
-
+logger = logging.getLogger('dataflake.ldapconnection')
 
 class LDAPConnection(object):
     """ LDAPConnection
@@ -53,10 +48,11 @@ class LDAPConnection(object):
     results     - Sequence of results
     """
 
-    def __init__( self, server='', login_attr='', users_base='', rdn_attr=''
-                , use_ssl=0, bind_dn='', bind_pwd='', read_only=0,
-                  conn_timeout=-1, op_timeout=-1, objectclasses='top,person',
-                  binduid_usage=1,
+    def __init__( self, host, port, protocol, login_attr='', users_base='',
+                  rdn_attr='', bind_dn='', bind_pwd='',
+                  read_only=0, conn_timeout=-1, op_timeout=-1,
+                  objectclasses=(u'top', u'person'),
+                  binduid_usage=1, c_factory=c_factory,
                 ):
         """ Create a new LDAPDelegate instance """
         self._hash = 'ldap_delegate%s' % str(random.random())
@@ -67,40 +63,16 @@ class LDAPConnection(object):
         self.binduid_usage = int(binduid_usage)
         self.read_only = not not read_only
         self.u_base = users_base
+        self.c_factory = c_factory
 
-        if isinstance(objectclasses, str) or isinstance(objectclasses, unicode):
-            objectclasses = [x.strip() for x in objectclasses.split(',')]
         self.u_classes = objectclasses
 
-
-        if server != '':
-            if server.find(':') != -1:
-                host = server.split(':')[0].strip()
-                port = int(server.split(':')[1])
-            else:
-                host = server
-
-                if use_ssl == 2:
-                    port = 0
-                elif use_ssl == 1:
-                    port = 636
-                else:
-                    port = 389
-
-            if use_ssl == 2:
-                protocol = 'ldapi'
-                port = 0
-            elif use_ssl == 1:
-                protocol = 'ldaps'
-            else:
-                protocol = 'ldap'
-
-            self.server = { 'host' : host
-                            , 'port' : port
-                            , 'protocol' : protocol
-                            , 'conn_timeout' : conn_timeout
-                            , 'op_timeout' : op_timeout
-                            }
+        self.server = { 'host' : host,
+                        'port' : port,
+                        'protocol' : protocol,
+                        'conn_timeout' : conn_timeout,
+                        'op_timeout' : op_timeout,
+                        }
 
         # Delete the cached connection in case the new server was added
         # in response to the existing server failing in a way that leads
@@ -178,11 +150,11 @@ class LDAPConnection(object):
         """ Factored out to allow usage by other pieces """
         # Connect to the server to get a raw connection object
         connection = getResource( '%s-connection' % self._hash
-                                , c_factory
+                                , self.c_factory
                                 , (connection_string,)
                                 )
-        if not connection._type is c_factory:
-            connection = c_factory(connection_string)
+        if not connection._type is self.c_factory:
+            connection = self.c_factory(connection_string)
 
         connection_string = self._createConnectionString(self.server)
 
@@ -227,85 +199,58 @@ class LDAPConnection(object):
               , convert_filter=True
               ):
         """ The main search engine """
-        result = { 'exception' : ''
-                 , 'size' : 0
+        result = { 'size' : 0
                  , 'results' : []
                  }
         if convert_filter:
             filter = to_utf8(filter)
         base = self._clean_dn(base)
 
+        connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
+        if connection is None:
+            raise RuntimeError('Cannot connect to LDAP server')
+
         try:
-            connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
-            if connection is None:
-                result['exception'] = 'Cannot connect to LDAP server'
-                return result
+            res = connection.search_s(base, scope, filter, attrs)
+        except ldap.PARTIAL_RESULTS:
+            res_type, res = connection.result(all=0)
+        except ldap.REFERRAL, e:
+            connection = self.handle_referral(e)
 
             try:
                 res = connection.search_s(base, scope, filter, attrs)
             except ldap.PARTIAL_RESULTS:
                 res_type, res = connection.result(all=0)
-            except ldap.REFERRAL, e:
-                connection = self.handle_referral(e)
 
-                try:
-                    res = connection.search_s(base, scope, filter, attrs)
-                except ldap.PARTIAL_RESULTS:
-                    res_type, res = connection.result(all=0)
+        for rec_dn, rec_dict in res:
+            # When used against Active Directory, "rec_dict" may not be
+            # be a dictionary in some cases (instead, it can be a list)
+            # An example of a useless "res" entry that can be ignored
+            # from AD is
+            # (None, ['ldap://ForestDnsZones.PORTAL.LOCAL/DC=ForestDnsZones,DC=PORTAL,DC=LOCAL'])
+            # This appears to be some sort of internal referral, but
+            # we can't handle it, so we need to skip over it.
+            try:
+                items =  rec_dict.items()
+            except AttributeError:
+                # 'items' not found on rec_dict
+                continue
 
-            for rec_dn, rec_dict in res:
-                # When used against Active Directory, "rec_dict" may not be
-                # be a dictionary in some cases (instead, it can be a list)
-                # An example of a useless "res" entry that can be ignored
-                # from AD is
-                # (None, ['ldap://ForestDnsZones.PORTAL.LOCAL/DC=ForestDnsZones,DC=PORTAL,DC=LOCAL'])
-                # This appears to be some sort of internal referral, but
-                # we can't handle it, so we need to skip over it.
-                try:
-                    items =  rec_dict.items()
-                except AttributeError:
-                    # 'items' not found on rec_dict
-                    continue
+            for key, value in items:
+                if ( not isinstance(value, str) and 
+                     key.lower() not in BINARY_ATTRIBUTES ):
+                    try:
+                        for i in range(len(value)):
+                            value[i] = from_utf8(value[i])
+                    except:
+                        pass
 
-                for key, value in items:
-                    if ( not isinstance(value, str) and 
-                         key.lower() not in BINARY_ATTRIBUTES ):
-                        try:
-                            for i in range(len(value)):
-                                value[i] = from_utf8(value[i])
-                        except:
-                            pass
+            rec_dict['dn'] = from_utf8(rec_dn)
 
-                rec_dict['dn'] = from_utf8(rec_dn)
-
-                result['results'].append(rec_dict)
-                result['size'] += 1
-
-        except ldap.INVALID_CREDENTIALS:
-            msg = 'Invalid authentication credentials'
-            logger.debug(msg, exc_info=1)
-            result['exception'] = msg
-
-        except ldap.NO_SUCH_OBJECT:
-            msg = 'Cannot find %s under %s' % (filter, base)
-            logger.debug(msg, exc_info=1)
-            result['exception'] = msg
-
-        except (ldap.SIZELIMIT_EXCEEDED, ldap.ADMINLIMIT_EXCEEDED):
-            msg = 'Too many results for this query'
-            logger.warning(msg, exc_info=1)
-            result['exception'] = msg
-
-        except (KeyboardInterrupt, SystemExit):
-            raise
-
-        except Exception, e:
-            msg = str(e)
-            logger.error(msg, exc_info=1)
-            result['exception'] = msg
+            result['results'].append(rec_dict)
+            result['size'] += 1
 
         return result
-
 
     def insert(self, base, rdn, attrs=None):
         """ Insert a new record """
@@ -313,8 +258,6 @@ class LDAPConnection(object):
             msg = 'Running in read-only mode, insertion is disabled'
             logger.info(msg)
             return msg
-
-        msg = ''
 
         dn = self._clean_dn(to_utf8('%s,%s' % (rdn, base)))
         attribute_list = []
@@ -338,84 +281,42 @@ class LDAPConnection(object):
         try:
             connection = self.connect()
             connection.add_s(dn, attribute_list)
-        except ldap.INVALID_CREDENTIALS, e:
-            e_name = e.__class__.__name__
-            msg = '%s No permission to insert "%s"' % (e_name, dn)
-        except ldap.ALREADY_EXISTS, e:
-            e_name = e.__class__.__name__
-            msg = '%s Record with dn "%s" already exists' % (e_name, dn)
         except ldap.REFERRAL, e:
-            try:
-                connection = self.handle_referral(e)
-                connection.add_s(dn, attribute_list)
-            except ldap.INVALID_CREDENTIALS:
-                e_name = e.__class__.__name__
-                msg = '%s No permission to insert "%s"' % (e_name, dn)
-            except Exception, e:
-                e_name = e.__class__.__name__
-                msg = '%s LDAPDelegate.insert: %s' % (e_name, str(e))
-        except Exception, e:
-            e_name = e.__class__.__name__
-            msg = '%s LDAPDelegate.insert: %s' % (e_name, str(e))
-
-        if msg != '':
-            logger.info(msg, exc_info=1)
-
-        return msg
-
+            connection = self.handle_referral(e)
+            connection.add_s(dn, attribute_list)
 
     def delete(self, dn):
         """ Delete a record """
         if self.read_only:
-            msg = 'Running in read-only mode, deletion is disabled'
-            logger.info(msg)
-            return msg
+            raise RuntimeError(
+                'Running in read-only mode, deletion is disabled')
 
-        msg = ''
         utf8_dn = self._clean_dn(to_utf8(dn))
 
         try:
             connection = self.connect()
             connection.delete_s(utf8_dn)
-        except ldap.INVALID_CREDENTIALS:
-            msg = 'No permission to delete "%s"' % dn
         except ldap.REFERRAL, e:
-            try:
-                connection = self.handle_referral(e)
-                connection.delete_s(utf8_dn)
-            except ldap.INVALID_CREDENTIALS:
-                msg = 'No permission to delete "%s"' % dn
-            except Exception, e:
-                msg = 'LDAPDelegate.delete: %s' % str(e)
-        except Exception, e:
-            msg = 'LDAPDelegate.delete: %s' % str(e)
-
-        if msg != '':
-            logger.info(msg, exc_info=1)
-
-        return msg
+            connection = self.handle_referral(e)
+            connection.delete_s(utf8_dn)
 
 
     def modify(self, dn, mod_type=None, attrs=None):
         """ Modify a record """
         if self.read_only:
-            msg = 'Running in read-only mode, modification is disabled'
-            logger.info(msg)
-            return msg
+            raise RuntimeError(
+                'Running in read-only mode, modification is disabled')
 
         utf8_dn = self._clean_dn(to_utf8(dn))
         res = self.search(base=utf8_dn, scope=self.BASE)
         attrs = attrs and attrs or {}
 
-        if res['exception']:
-            return res['exception']
-
         if res['size'] == 0:
-            return 'LDAPDelegate.modify: Cannot find dn "%s"' % dn
+            raise RuntimeError(
+                'LDAPDelegate.modify: Cannot find dn "%s"' % dn)
 
         cur_rec = res['results'][0]
         mod_list = []
-        msg = ''
 
         for key, values in attrs.items():
 
@@ -450,29 +351,9 @@ class LDAPConnection(object):
                 debug_msg = 'Nothing to modify: %s' % utf8_dn
                 logger.debug('LDAPDelegate.modify: %s' % debug_msg)
 
-        except ldap.INVALID_CREDENTIALS, e:
-            e_name = e.__class__.__name__
-            msg = '%s No permission to modify "%s"' % (e_name, dn)
-
         except ldap.REFERRAL, e:
-            try:
-                connection = self.handle_referral(e)
-                connection.modify_s(dn, mod_list)
-            except ldap.INVALID_CREDENTIALS, e:
-                e_name = e.__class__.__name__
-                msg = '%s No permission to modify "%s"' % (e_name, dn)
-            except Exception, e:
-                e_name = e.__class__.__name__
-                msg = '%s LDAPDelegate.modify: %s' % (e_name, str(e))
-
-        except Exception, e:
-            e_name = e.__class__.__name__
-            msg = '%s LDAPDelegate.modify: %s' % (e_name, str(e))
-
-        if msg != '':
-            logger.info(msg, exc_info=1)
-
-        return msg
+            connection = self.handle_referral(e)
+            connection.modify_s(dn, mod_list)
 
 
     # Some helper functions and constants that are now on the LDAPDelegate
@@ -536,9 +417,3 @@ class LDAPConnection(object):
         return ldap_url.initializeUrl()
 
 
-
-# Register this delegate class with the delegate registry
-registerDelegate( 'LDAP delegate'
-                , LDAPDelegate
-                , 'The default LDAP delegate from the LDAPUserFolder package'
-                )
