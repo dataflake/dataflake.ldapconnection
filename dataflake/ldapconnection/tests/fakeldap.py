@@ -36,6 +36,8 @@ SCOPE_SUBTREE = getattr(ldap, 'SCOPE_SUBTREE')
 MOD_ADD = getattr(ldap, 'MOD_ADD')
 MOD_REPLACE = getattr(ldap, 'MOD_REPLACE')
 MOD_DELETE = getattr(ldap, 'MOD_DELETE')
+REFERRAL = getattr(ldap, 'REFERRAL')
+TIMEOUT = getattr(ldap, 'TIMEOUT')
 
 OPT_PROTOCOL_VERSION = None
 OPT_REFERRALS = None
@@ -308,8 +310,6 @@ def find_query_attr(query, attr):
     for fltr in q1:
         if fltr.attr.lower() == attr.lower():
             return fltr
-
-REFERRAL = None
 
 TREE = {}
 

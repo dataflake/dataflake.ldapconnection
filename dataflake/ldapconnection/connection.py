@@ -20,7 +20,6 @@ import ldap
 from ldapurl import LDAPUrl
 from ldapurl import isLDAPUrl
 from ldap.dn import escape_dn_chars
-import logging
 import random
 
 # LDAPUserFolder package imports
@@ -29,12 +28,6 @@ from dataflake.ldapconnection.sharedresource import setResource
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import from_utf8
 from dataflake.ldapconnection.utils import to_utf8
-
-try:
-    c_factory = ldap.ldapobject.ReconnectLDAPObject
-except AttributeError:
-    c_factory = ldap.ldapobject.SimpleLDAPObject
-logger = logging.getLogger('dataflake.ldapconnection')
 
 class LDAPConnection(object):
     """ LDAPConnection
@@ -48,11 +41,13 @@ class LDAPConnection(object):
     results     - Sequence of results
     """
 
-    def __init__( self, host, port, protocol, login_attr='', users_base='',
+    def __init__( self, host, port, protocol, c_factory,
+                  login_attr='', users_base='',
                   rdn_attr='', bind_dn='', bind_pwd='',
                   read_only=0, conn_timeout=-1, op_timeout=-1,
                   objectclasses=(u'top', u'person'),
-                  binduid_usage=1, c_factory=c_factory,
+                  binduid_usage=1, 
+                  logger = None,
                 ):
         """ Create a new LDAPDelegate instance """
         self._hash = 'ldap_delegate%s' % str(random.random())
@@ -66,6 +61,7 @@ class LDAPConnection(object):
         self.c_factory = c_factory
 
         self.u_classes = objectclasses
+        self.logger = logger
 
         self.server = { 'host' : host,
                         'port' : port,
@@ -79,12 +75,12 @@ class LDAPConnection(object):
         # to nasty timeouts
         setResource('%s-connection' % self._hash, '')
 
-    def connect(self, bind_dn='', bind_pwd=''):
+    def connect(self, bind_dn=None, bind_pwd=''):
         """ initialize an ldap server connection """
         conn = None
         conn_string = ''
 
-        if bind_dn != '':
+        if bind_dn is not None:
             user_dn = bind_dn
             user_pwd = bind_pwd or '~'
         elif self.binduid_usage == 1:
@@ -255,9 +251,8 @@ class LDAPConnection(object):
     def insert(self, base, rdn, attrs=None):
         """ Insert a new record """
         if self.read_only:
-            msg = 'Running in read-only mode, insertion is disabled'
-            logger.info(msg)
-            return msg
+            raise RuntimeError(
+                'Running in read-only mode, insertion is disabled')
 
         dn = self._clean_dn(to_utf8('%s,%s' % (rdn, base)))
         attribute_list = []
@@ -349,7 +344,8 @@ class LDAPConnection(object):
                 connection.modify_s(utf8_dn, mod_list)
             else:
                 debug_msg = 'Nothing to modify: %s' % utf8_dn
-                logger.debug('LDAPDelegate.modify: %s' % debug_msg)
+                if self.logger is not None:
+                    self.logger.debug('LDAPDelegate.modify: %s' % debug_msg)
 
         except ldap.REFERRAL, e:
             connection = self.handle_referral(e)
