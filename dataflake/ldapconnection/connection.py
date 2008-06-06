@@ -45,8 +45,6 @@ class LDAPConnection(object):
                   login_attr='', users_base='',
                   rdn_attr='', bind_dn='', bind_pwd='',
                   read_only=0, conn_timeout=-1, op_timeout=-1,
-                  objectclasses=(u'top', u'person'),
-                  binduid_usage=1, 
                   logger = None,
                 ):
         """ Create a new LDAPDelegate instance """
@@ -55,12 +53,10 @@ class LDAPConnection(object):
         self.rdn_attr = rdn_attr
         self.bind_dn = bind_dn
         self.bind_pwd = bind_pwd
-        self.binduid_usage = int(binduid_usage)
         self.read_only = not not read_only
-        self.u_base = users_base
         self.c_factory = c_factory
+        self.conn = None
 
-        self.u_classes = objectclasses
         self.logger = logger
 
         self.server = { 'host' : host,
@@ -70,50 +66,25 @@ class LDAPConnection(object):
                         'op_timeout' : op_timeout,
                         }
 
-        # Delete the cached connection in case the new server was added
-        # in response to the existing server failing in a way that leads
-        # to nasty timeouts
-        setResource('%s-connection' % self._hash, '')
-
     def connect(self, bind_dn=None, bind_pwd=''):
         """ initialize an ldap server connection """
-        conn = None
-        conn_string = ''
 
-        if bind_dn is not None:
-            user_dn = bind_dn
-            user_pwd = bind_pwd or '~'
-        elif self.binduid_usage == 1:
-            user_dn = self.bind_dn
-            user_pwd = self.bind_pwd
-        else:
-            user_dn = user_pwd = ''
+        user_dn = bind_dn or self.bind_dn
+        user_pwd = bind_pwd or self.bind_pwd
 
-        conn = getResource('%s-connection' % self._hash, str, ())
-        if not isinstance(conn._type(), str):
-            try:
-                conn.simple_bind_s(user_dn, user_pwd)
-                conn.search_s(self.u_base, self.BASE, '(objectClass=*)')
-                return conn
-            except ( AttributeError
-                   , ldap.SERVER_DOWN
-                   , ldap.NO_SUCH_OBJECT
-                   , ldap.TIMEOUT
-                   , ldap.INVALID_CREDENTIALS
-                   ):
-                pass
+        if self.conn is None:
+            conn_string = self._createConnectionString(self.server)
+            self.conn = self._connect(
+                conn_string,
+                user_dn,
+                user_pwd,
+                conn_timeout=self.server['conn_timeout'],
+                op_timeout=self.server['op_timeout'],
+                )
 
-        e = None
-
-        conn_string = self._createConnectionString(self.server)
-
-        newconn = self._connect( conn_string
-                                 , user_dn
-                                 , user_pwd
-                                 , conn_timeout=self.server['conn_timeout']
-                                 , op_timeout=self.server['op_timeout']
-                                 )
-        return newconn
+        self.conn.simple_bind_s(user_dn, user_pwd)
+        self.conn.search_s('', self.BASE, '(objectClass=*)')
+        return self.conn
 
     def handle_referral(self, exception):
         """ Handle a referral specified in a exception """
@@ -124,13 +95,7 @@ class LDAPConnection(object):
         if isLDAPUrl(ldap_url):
             conn_str = LDAPUrl(ldap_url).initializeUrl()
 
-            if self.binduid_usage == 1:
-                user_dn = self.bind_dn
-                user_pwd = self.bind_pwd
-            else:
-                user_dn = user_pwd = ''
-
-            return self._connect(conn_str, user_dn, user_pwd)
+            return self._connect(conn_str, self.bind_dn, self.bind_pwd)
 
         else:
             raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
