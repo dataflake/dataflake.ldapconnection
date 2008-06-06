@@ -15,16 +15,12 @@
 $Id: LDAPDelegate.py 1485 2008-06-04 16:08:38Z jens $
 """
 
-# General python imports
 import ldap
 from ldapurl import LDAPUrl
 from ldapurl import isLDAPUrl
 from ldap.dn import escape_dn_chars
 import random
 
-# LDAPUserFolder package imports
-from dataflake.ldapconnection.sharedresource import getResource
-from dataflake.ldapconnection.sharedresource import setResource
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import from_utf8
 from dataflake.ldapconnection.utils import to_utf8
