@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2000-2008 Jens Vagelpohl and Contributors. All Rights Reserved.
+# Copyright (c) 2008 Jens Vagelpohl and Contributors. All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
 # Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
@@ -30,7 +30,11 @@ setup(name='dataflake.ldapconnection',
       classifiers=[
         "Development Status :: 1 - Planning",
         "Intended Audience :: Developers",
+        "License :: OSI Approved :: Zope Public License",
+        "Operating System :: OS Independent",
         "Programming Language :: Python",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
         ],
       keywords='ldap',
       author="Agendaless Consulting and Jens Vagelpohl",
