@@ -38,8 +38,7 @@ class LDAPConnection(object):
     """
 
     def __init__( self, host, port, protocol, c_factory,
-                  login_attr='', users_base='',
-                  rdn_attr='', bind_dn='', bind_pwd='',
+                  login_attr='', rdn_attr='', bind_dn='', bind_pwd='',
                   read_only=0, conn_timeout=-1, op_timeout=-1,
                   logger = None,
                 ):
