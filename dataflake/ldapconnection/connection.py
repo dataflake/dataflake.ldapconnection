@@ -86,21 +86,6 @@ class LDAPConnection(object):
         self.conn.search_s('', self.BASE, '(objectClass=*)')
         return self.conn
 
-    def handle_referral(self, exception):
-        """ Handle a referral specified in a exception """
-        payload = exception.args[0]
-        info = payload.get('info')
-        ldap_url = info[info.find('ldap'):]
-
-        if isLDAPUrl(ldap_url):
-            conn_str = LDAPUrl(ldap_url).initializeUrl()
-
-            return self._connect(conn_str, self.bind_dn, self.bind_pwd)
-
-        else:
-            raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
-
-
     def _connect( self
                 , connection_string
                 , user_dn
@@ -109,20 +94,7 @@ class LDAPConnection(object):
                 , op_timeout=-1
                 ):
         """ Factored out to allow usage by other pieces """
-        # Connect to the server to get a raw connection object
-        connection = getResource( '%s-connection' % self._hash
-                                , self.c_factory
-                                , (connection_string,)
-                                )
-        if not connection._type is self.c_factory:
-            connection = self.c_factory(connection_string)
-
-        connection_string = self._createConnectionString(self.server)
-
-        # We only reuse a connection if it is in our own configuration
-        # in order to prevent getting "stuck" on a connection created
-        # while dealing with a ldap.REFERRAL exception
-        setResource('%s-connection' % self._hash, connection)
+        connection = self.c_factory(connection_string)
 
         # Set the protocol version - version 3 is preferred
         try:
@@ -148,6 +120,20 @@ class LDAPConnection(object):
         connection.simple_bind_s(user_dn, user_pwd)
 
         return connection
+
+    def handle_referral(self, exception):
+        """ Handle a referral specified in a exception """
+        payload = exception.args[0]
+        info = payload.get('info')
+        ldap_url = info[info.find('ldap'):]
+
+        if isLDAPUrl(ldap_url):
+            conn_str = LDAPUrl(ldap_url).initializeUrl()
+
+            return self._connect(conn_str, self.bind_dn, self.bind_pwd)
+
+        else:
+            raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
 
 
     def search( self
