@@ -19,9 +19,14 @@ $Id: LDAPConnection.py 1485 2008-06-04 16:08:38Z jens $
 """
 
 import ldap
+try:
+    from ldap.dn import explode_dn
+except ImportError:
+    # python-ldap < 2.3.x
+    from ldap import explode_dn
+from ldap.dn import escape_dn_chars
 from ldapurl import LDAPUrl
 from ldapurl import isLDAPUrl
-from ldap.dn import escape_dn_chars
 
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import from_utf8
@@ -274,7 +279,7 @@ class LDAPConnection(object):
                 raw_utf8_rdn = to_utf8('%s=%s' % (self.rdn_attr, new_rdn))
                 new_utf8_rdn = self._clean_rdn(raw_utf8_rdn)
                 connection.modrdn_s(utf8_dn, new_utf8_rdn)
-                old_dn_exploded = ldap.explode_dn(utf8_dn, 0)
+                old_dn_exploded = explode_dn(utf8_dn, 0)
                 old_dn_exploded[0] = new_utf8_rdn
                 utf8_dn = ','.join(old_dn_exploded)
 
