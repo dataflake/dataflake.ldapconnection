@@ -120,21 +120,6 @@ class LDAPConnection(object):
 
         return connection
 
-    def handle_referral(self, exception):
-        """ Handle a referral specified in the passed-in exception 
-        """
-        payload = exception.args[0]
-        info = payload.get('info')
-        ldap_url = info[info.find('ldap'):]
-
-        if isLDAPUrl(ldap_url):
-            conn_str = LDAPUrl(ldap_url).initializeUrl()
-
-            return self._connect(conn_str, self.bind_dn, self.bind_pwd)
-
-        else:
-            raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
-
     def search( self
               , base
               , scope
@@ -162,7 +147,7 @@ class LDAPConnection(object):
         except ldap.PARTIAL_RESULTS:
             res_type, res = connection.result(all=0)
         except ldap.REFERRAL, e:
-            connection = self.handle_referral(e)
+            connection = self._handle_referral(e)
 
             try:
                 res = connection.search_s(base, scope, filter, attrs)
@@ -229,7 +214,7 @@ class LDAPConnection(object):
             connection = self.connect()
             connection.add_s(dn, attribute_list)
         except ldap.REFERRAL, e:
-            connection = self.handle_referral(e)
+            connection = self._handle_referral(e)
             connection.add_s(dn, attribute_list)
 
     def delete(self, dn):
@@ -245,7 +230,7 @@ class LDAPConnection(object):
             connection = self.connect()
             connection.delete_s(utf8_dn)
         except ldap.REFERRAL, e:
-            connection = self.handle_referral(e)
+            connection = self._handle_referral(e)
             connection.delete_s(utf8_dn)
 
     def modify(self, dn, mod_type=None, attrs=None):
@@ -301,8 +286,23 @@ class LDAPConnection(object):
                     self.logger.debug('LDAPDelegate.modify: %s' % debug_msg)
 
         except ldap.REFERRAL, e:
-            connection = self.handle_referral(e)
+            connection = self._handle_referral(e)
             connection.modify_s(dn, mod_list)
+
+    def _handle_referral(self, exception):
+        """ Handle a referral specified in the passed-in exception 
+        """
+        payload = exception.args[0]
+        info = payload.get('info')
+        ldap_url = info[info.find('ldap'):]
+
+        if isLDAPUrl(ldap_url):
+            conn_str = LDAPUrl(ldap_url).initializeUrl()
+
+            return self._connect(conn_str, self.bind_dn, self.bind_pwd)
+
+        else:
+            raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
 
     def _clean_rdn(self, rdn):
         """ Escape all characters that need escaping for a DN, see RFC 2253 
