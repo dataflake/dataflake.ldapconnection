@@ -77,7 +77,7 @@ class LDAPConnection(object):
                 )
 
         self.conn.simple_bind_s(user_dn, user_pwd)
-        self.conn.search_s('', self.BASE, '(objectClass=*)')
+        self.conn.search_s('', ldap.SCOPE_BASE, '(objectClass=*)')
         return self.conn
 
     def _connect( self
@@ -248,7 +248,7 @@ class LDAPConnection(object):
                 'Running in read-only mode, modification is disabled')
 
         utf8_dn = self._clean_dn(to_utf8(dn))
-        res = self.search(base=utf8_dn, scope=self.BASE)
+        res = self.search(base=utf8_dn, scope=ldap.SCOPE_BASE)
         attrs = attrs and attrs or {}
 
         if res['size'] == 0:
@@ -267,9 +267,9 @@ class LDAPConnection(object):
 
             if mod_type is None:
                 if cur_rec.get(key, ['']) != values and values != ['']:
-                    mod_list.append((self.REPLACE, key, values))
+                    mod_list.append((ldap.MOD_REPLACE, key, values))
                 elif cur_rec.has_key(key) and values == ['']:
-                    mod_list.append((self.DELETE, key, None))
+                    mod_list.append((ldap.MOD_DELETE, key, None))
             else:
                 mod_list.append((mod_type, key, values))
 
@@ -281,7 +281,7 @@ class LDAPConnection(object):
                 raw_utf8_rdn = to_utf8('%s=%s' % (self.rdn_attr, new_rdn))
                 new_utf8_rdn = self._clean_rdn(raw_utf8_rdn)
                 connection.modrdn_s(utf8_dn, new_utf8_rdn)
-                old_dn_exploded = self.explode_dn(utf8_dn)
+                old_dn_exploded = ldap.explode_dn(utf8_dn, 0)
                 old_dn_exploded[0] = new_utf8_rdn
                 utf8_dn = ','.join(old_dn_exploded)
 
@@ -296,17 +296,6 @@ class LDAPConnection(object):
             connection = self.handle_referral(e)
             connection.modify_s(dn, mod_list)
 
-
-    # Some helper functions and constants that are now on the LDAPDelegate
-    # object itself to make it easier to override in subclasses, paving
-    # the way for different kinds of delegates.
-
-    ADD = ldap.MOD_ADD
-    DELETE = ldap.MOD_DELETE
-    REPLACE = ldap.MOD_REPLACE
-    BASE = ldap.SCOPE_BASE
-    ONELEVEL = ldap.SCOPE_ONELEVEL
-    SUBTREE = ldap.SCOPE_SUBTREE
 
     def _clean_rdn(self, rdn):
         """ Escape all characters that need escaping for a DN, see RFC 2253 """
@@ -326,21 +315,6 @@ class LDAPConnection(object):
         elems = [self._clean_rdn(x) for x in dn.split(',')]
 
         return ','.join(elems)
-
-
-    def explode_dn(self, dn, notypes=0):
-        """ Indirection to avoid need for importing ldap elsewhere """
-        return ldap.explode_dn(dn, notypes)
-
-
-    def getScopes(self):
-        """ Return simple tuple of ldap scopes
-
-        This method is used to create a simple way to store LDAP scopes as
-        numbers by the LDAPUserFolder. The returned tuple is used to find
-        a scope by using a integer that is used as an index to the sequence.
-        """
-        return (self.BASE, self.ONELEVEL, self.SUBTREE)
 
 
     def _createConnectionString(self, server_info):
