@@ -81,7 +81,7 @@ class LDAPConnection(object):
                 )
 
         self.conn.simple_bind_s(user_dn, user_pwd)
-        self.conn.search_s('', ldap.SCOPE_BASE, '(objectClass=*)')
+        self.conn.search_s(user_dn, ldap.SCOPE_BASE, '(objectClass=*)')
         return self.conn
 
     def _connect( self
