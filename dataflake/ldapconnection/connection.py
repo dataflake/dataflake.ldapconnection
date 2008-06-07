@@ -10,16 +10,18 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-""" LDAPDelegate: A delegate that performs LDAP operations
+""" LDAPConnection: A class modeling a LDAP server connection
 
-$Id: LDAPDelegate.py 1485 2008-06-04 16:08:38Z jens $
+Instances of this class offer a simplified API to do searches, insertions, 
+deletions or modifications.
+
+$Id: LDAPConnection.py 1485 2008-06-04 16:08:38Z jens $
 """
 
 import ldap
 from ldapurl import LDAPUrl
 from ldapurl import isLDAPUrl
 from ldap.dn import escape_dn_chars
-import random
 
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import from_utf8
@@ -42,7 +44,8 @@ class LDAPConnection(object):
                   read_only=0, conn_timeout=-1, op_timeout=-1,
                   logger = None,
                 ):
-        """ Create a new LDAPDelegate instance """
+        """ LDAPConnection initialization
+        """
         self.login_attr = login_attr
         self.rdn_attr = rdn_attr
         self.bind_dn = bind_dn
@@ -61,7 +64,8 @@ class LDAPConnection(object):
                         }
 
     def connect(self, bind_dn=None, bind_pwd=''):
-        """ initialize an ldap server connection """
+        """ initialize an ldap server connection 
+        """
 
         user_dn = bind_dn or self.bind_dn
         user_pwd = bind_pwd or self.bind_pwd
@@ -87,7 +91,8 @@ class LDAPConnection(object):
                 , conn_timeout=5
                 , op_timeout=-1
                 ):
-        """ Factored out to allow usage by other pieces """
+        """ Factored out to allow usage by other pieces 
+        """
         connection = self.c_factory(connection_string)
 
         # Set the protocol version - version 3 is preferred
@@ -116,7 +121,8 @@ class LDAPConnection(object):
         return connection
 
     def handle_referral(self, exception):
-        """ Handle a referral specified in a exception """
+        """ Handle a referral specified in the passed-in exception 
+        """
         payload = exception.args[0]
         info = payload.get('info')
         ldap_url = info[info.find('ldap'):]
@@ -129,7 +135,6 @@ class LDAPConnection(object):
         else:
             raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
 
-
     def search( self
               , base
               , scope
@@ -139,7 +144,8 @@ class LDAPConnection(object):
               , bind_pwd=''
               , convert_filter=True
               ):
-        """ The main search engine """
+        """ Search for entries in the database
+        """
         result = { 'size' : 0
                  , 'results' : []
                  }
@@ -194,7 +200,8 @@ class LDAPConnection(object):
         return result
 
     def insert(self, base, rdn, attrs=None):
-        """ Insert a new record """
+        """ Insert a new record 
+        """
         if self.read_only:
             raise RuntimeError(
                 'Running in read-only mode, insertion is disabled')
@@ -226,7 +233,8 @@ class LDAPConnection(object):
             connection.add_s(dn, attribute_list)
 
     def delete(self, dn):
-        """ Delete a record """
+        """ Delete a record 
+        """
         if self.read_only:
             raise RuntimeError(
                 'Running in read-only mode, deletion is disabled')
@@ -240,9 +248,9 @@ class LDAPConnection(object):
             connection = self.handle_referral(e)
             connection.delete_s(utf8_dn)
 
-
     def modify(self, dn, mod_type=None, attrs=None):
-        """ Modify a record """
+        """ Modify a record 
+        """
         if self.read_only:
             raise RuntimeError(
                 'Running in read-only mode, modification is disabled')
@@ -296,9 +304,9 @@ class LDAPConnection(object):
             connection = self.handle_referral(e)
             connection.modify_s(dn, mod_list)
 
-
     def _clean_rdn(self, rdn):
-        """ Escape all characters that need escaping for a DN, see RFC 2253 """
+        """ Escape all characters that need escaping for a DN, see RFC 2253 
+        """
         if rdn.find('\\') != -1:
             # already escaped, disregard
             return rdn
@@ -311,11 +319,11 @@ class LDAPConnection(object):
             return rdn
 
     def _clean_dn(self, dn):
-        """ Escape all characters that need escaping for a DN, see RFC 2253 """
+        """ Escape all characters that need escaping for a DN, see RFC 2253 
+        """
         elems = [self._clean_rdn(x) for x in dn.split(',')]
 
         return ','.join(elems)
-
 
     def _createConnectionString(self, server_info):
         """ Convert a server info mapping into a connection string
