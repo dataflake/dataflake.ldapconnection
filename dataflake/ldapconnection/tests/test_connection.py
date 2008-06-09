@@ -75,6 +75,7 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
 
     # XXX search: test search referrals, binary attrs, nonstring values
+    # XXX need tests for insert, delete, and modify
 
 class DummyLDAPObjectFactory:
     searched = False
