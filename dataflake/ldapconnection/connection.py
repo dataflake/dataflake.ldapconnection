@@ -144,8 +144,6 @@ class LDAPConnection(object):
         base = self._clean_dn(base)
 
         connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
-        if connection is None:
-            raise RuntimeError('Cannot connect to LDAP server')
 
         try:
             res = connection.search_s(base, scope, filter, attrs)
@@ -174,13 +172,10 @@ class LDAPConnection(object):
                 continue
 
             for key, value in items:
-                if ( not isinstance(value, str) and 
-                     key.lower() not in BINARY_ATTRIBUTES ):
-                    try:
+                if key.lower() not in BINARY_ATTRIBUTES:
+                    if not isinstance(value, str):
                         for i in range(len(value)):
                             value[i] = from_utf8(value[i])
-                    except:
-                        pass
 
             rec_dict['dn'] = from_utf8(rec_dn)
 
