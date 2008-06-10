@@ -262,13 +262,17 @@ class LDAPConnection(object):
 
             if key.endswith(';binary'):
                 key = key[:-7]
+            elif isinstance(values, (str, unicode)):
+                values = map(to_utf8, [x.strip() for x in values.split(';')])
             else:
                 values = map(to_utf8, values)
 
             if mod_type is None:
-                if cur_rec.get(key, ['']) != values and values != ['']:
+                if not cur_rec.has_key(key) and values != ['']:
+                    mod_list.append((ldap.MOD_ADD, key, values))
+                elif cur_rec.get(key,['']) != values and values not in ([''],[]):
                     mod_list.append((ldap.MOD_REPLACE, key, values))
-                elif cur_rec.has_key(key) and values == ['']:
+                elif cur_rec.has_key(key) and values in ([''], []):
                     mod_list.append((ldap.MOD_DELETE, key, None))
             else:
                 mod_list.append((mod_type, key, values))
@@ -276,7 +280,11 @@ class LDAPConnection(object):
         try:
             connection = self.connect()
 
-            new_rdn = attrs.get(self.rdn_attr, [''])[0]
+            raw_rdn = attrs.get(self.rdn_attr, '')
+            if isinstance(raw_rdn, (str, unicode)):
+                raw_rdn = [raw_rdn]
+            new_rdn = raw_rdn[0]
+
             if new_rdn and new_rdn != cur_rec.get(self.rdn_attr)[0]:
                 raw_utf8_rdn = to_utf8('%s=%s' % (self.rdn_attr, new_rdn))
                 new_utf8_rdn = self._clean_rdn(raw_utf8_rdn)

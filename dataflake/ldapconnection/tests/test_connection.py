@@ -17,6 +17,8 @@ $Id: test_connection.py 1485 2008-06-04 16:08:38Z jens $
 
 import unittest
 
+from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
+
 class ConnectionTests(unittest.TestCase):
     def _getTargetClass(self):
         from dataflake.ldapconnection.connection import LDAPConnection
@@ -194,51 +196,194 @@ class ConnectionTests(unittest.TestCase):
         dn, values = of.added_values.items()[0]
         self.assertEqual(values['myvalue'], u'a')
 
+    def test_modify_explicit_add(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        import ldap
+        conn.modify('dn', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        self.assertEqual(mode, ldap.MOD_ADD)
+        self.assertEqual(key, 'b')
+        self.assertEqual(values, ['b'])
+
+        # Trying to add an empty new value should not cause more operations
+        conn.modify('dn', mod_type=ldap.MOD_ADD, attrs={'c':''})
+        self.assertEqual(len(of.modifications), 1)
+
+    def test_modify_explicit_modify(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        import ldap
+        conn.modify('dn', mod_type=ldap.MOD_REPLACE, attrs={'a':'y'})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        self.assertEqual(mode, ldap.MOD_REPLACE)
+        self.assertEqual(key, 'a')
+        self.assertEqual(values, ['y'])
+
+        # Trying to modify a non-existing key with an empty value should
+        # not result in more operations
+        conn.modify('dn', mod_type=ldap.MOD_REPLACE, attrs={'b':''})
+        self.assertEqual(len(of.modifications), 1)
+
+    def test_modify_explicit_delete(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        import ldap
+        conn.modify('dn', mod_type=ldap.MOD_DELETE, attrs={'a':'y'})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        self.assertEqual(mode, ldap.MOD_DELETE)
+        self.assertEqual(key, 'a')
+
+        # Tryng to modify the record by providing an empty non-existing key
+        # should not result in more operations.
+        conn.modify('dn', mod_type=ldap.MOD_DELETE, attrs={'b':''})
+        self.assertEqual(len(of.modifications), 1)
+
+    def test_modify_implicit_add(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.modify('dn', attrs={'b':'b'})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        import ldap
+        self.assertEqual(mode, ldap.MOD_ADD)
+        self.assertEqual(key, 'b')
+        self.assertEqual(values, ['b'])
+
+        # Trying to add an empty new value should not cause more operations
+        conn.modify('dn', attrs={'c':''})
+        self.assertEqual(len(of.modifications), 1)
+
+    def test_modify_implicit_modify(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.modify('dn', attrs={'a':'y'})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        import ldap
+        self.assertEqual(mode, ldap.MOD_REPLACE)
+        self.assertEqual(key, 'a')
+        self.assertEqual(values, ['y'])
+
+        # Trying to modify a non-existing key should
+        # not result in more operations
+        conn.modify('dn', attrs={'b':'z'})
+        self.assertEqual(len(of.modifications), 1)
+
+    def test_modify_implicit_delete(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.modify('dn', attrs={'a':''})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        import ldap
+        self.assertEqual(mode, ldap.MOD_DELETE)
+        self.assertEqual(key, 'a')
+
+        # Trying to modify the record by providing an empty non-existing key
+        # should not result in more operations.
+        conn.modify('dn', attrs={'b':''})
+        self.assertEqual(len(of.modifications), 1)
+
+    def test_modify_readonly(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory, read_only=True)
+        self.assertRaises(RuntimeError, conn.modify, 'dn', {})
+
+    def test_modify_binary(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.modify('dn', attrs={'a;binary':u'y'})
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        self.assertEqual(key, 'a')
+        self.assertEqual(values, u'y')
+
+    def test_modify_modrdn(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('a=oldvalue,dc=localhost', {'a':'oldvalue'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory, rdn_attr='a')
+        conn.modify('a=oldvalue,dc=localhost', attrs={'a':'newvalue'})
+        self.failUnless(of.modified_rdn)
+        self.assertEqual(of.old_dn, 'a=oldvalue,dc=localhost')
+        self.assertEqual(of.new_rdn, 'a=newvalue')
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'a=newvalue,dc=localhost')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        self.assertEqual(key, 'a')
+        self.assertEqual(values, ['newvalue'])
+
+    def test_modify_referral(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        import ldap
+        of.mod_exc = ( ldap.REFERRAL
+                     , {'info':'please go to ldap://otherhost:1389'}
+                     )
+        def factory(conn_string):
+            of.conn_string = conn_string
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.modify('dn', attrs={'a':'y'})
+        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
+        self.failUnless(of.modified)
+        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(len(of.modifications), 1)
+        mode, key, values = of.modifications[0]
+        self.assertEqual(mode, ldap.MOD_REPLACE)
+        self.assertEqual(key, 'a')
+        self.assertEqual(values, ['y'])
+
     # XXX search: test search nonstring values
     # XXX need tests for delete, and modify
 
-class DummyLDAPObjectFactory:
-    searched = False
-    res = ()
-    search_exc = None
-    partial = None
-    added = None
-    add_exc = None
-    def __init__(self, conn_string):
-        self.conn_string = conn_string
-        self.options = []
-
-    def set_option(self, option, value):
-        self.options.append((option, value))
-
-    def simple_bind_s(self, binduid, bindpwd):
-        self.binduid = binduid
-        self.bindpwd = bindpwd
-        return 1
-
-    def search_s(self, dn, scope, klass, attrs=None):
-        self.searched = True
-        if attrs is not None:
-            if self.search_exc:
-                exception = self.search_exc[0](self.search_exc[1])
-                # clear out the exception to prevent looping
-                self.search_exc = None
-                raise exception
-        return self.res
-
-    def result(self, all):
-        return self.partial
-
-    def add_s(self, dn, attributes):
-        self.added = True
-        if self.add_exc:
-            exception = self.add_exc[0](self.add_exc[1])
-            # clear out the exception to prevent looping
-            self.add_exc = None
-            raise exception
-        added = getattr(self, 'added_values', {})
-        added.update({dn:dict(attributes)})
-        self.added_values = added
 
 def test_suite():
     import sys
