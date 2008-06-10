@@ -381,9 +381,38 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(key, 'a')
         self.assertEqual(values, ['y'])
 
-    # XXX search: test search nonstring values
-    # XXX need tests for delete, and modify
+    def test_delete(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.delete('dn')
+        self.failUnless(of.deleted)
+        self.assertEqual(of.deleted_dn, 'dn')
 
+    def test_delete_readonly(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory, read_only=True)
+        self.assertRaises(RuntimeError, conn.delete, 'dn')
+
+    def test_delete_referral(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        import ldap
+        of.del_exc = ( ldap.REFERRAL
+                     , {'info':'please go to ldap://otherhost:1389'}
+                     )
+        def factory(conn_string):
+            of.conn_string = conn_string
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.delete('dn')
+        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
+        self.failUnless(of.deleted)
+        self.assertEqual(of.deleted_dn, 'dn')
+
+    # XXX search: test search nonstring values
 
 def test_suite():
     import sys

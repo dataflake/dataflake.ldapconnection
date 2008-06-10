@@ -25,6 +25,9 @@ class DummyLDAPObjectFactory:
     modified = False
     mod_exc = None
     modified_rdn = False
+    deleted = False
+    del_exc = None
+    deleted_dn = None
     def __init__(self, conn_string):
         self.conn_string = conn_string
         self.options = []
@@ -75,4 +78,13 @@ class DummyLDAPObjectFactory:
         self.modified_rdn = True
         self.old_dn = old_dn
         self.new_rdn = new_rdn
+
+    def delete_s(self, dn):
+        self.deleted = True
+        if self.del_exc:
+            exception = self.del_exc[0](self.del_exc[1])
+            # clear out the exception to prevent looping
+            self.del_exc = None
+            raise exception
+        self.deleted_dn = dn
 
