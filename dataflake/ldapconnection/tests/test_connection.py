@@ -1,3 +1,20 @@
+##############################################################################
+#
+# Copyright (c) 2008 Jens Vagelpohl and Contributors. All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+""" test_connection: Tests for the LDAPConnection class
+
+$Id: test_connection.py 1485 2008-06-04 16:08:38Z jens $
+"""
+
 import unittest
 
 class ConnectionTests(unittest.TestCase):
