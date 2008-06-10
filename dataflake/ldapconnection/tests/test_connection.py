@@ -76,7 +76,25 @@ class ConnectionTests(unittest.TestCase):
         results = response['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
-        
+
+    def test_search_bad_results(self):
+        # Make sure the resultset omits "useless" entries that may be
+        # emitted by some servers, notable Microsoft ActiveDirectory.
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'})
+                 , ('dn2',['thisvalueisuseless']) 
+                 , ('dn3','anotheruselessvalue')
+                 , ('dn4', ('morebadstuff',))
+                 ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        response = conn.search('base', 'scope')
+        self.assertEqual(response['size'], 1)
+        results = response['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
+
     def test_search_partial_results(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.partial = (None, [('dn', {'a':'a'})])
@@ -91,7 +109,35 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
 
-    # XXX search: test search referrals, binary attrs, nonstring values
+    def test_search_referral(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        import ldap
+        of.search_exc = ( ldap.REFERRAL
+                        , {'info':'please go to ldap://otherhost:1389'}
+                        )
+        def factory(conn_string):
+            of.conn_string = conn_string
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        response = conn.search('base', 'scope')
+        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
+
+    def test_search_binaryattribute(self):
+        # A binary value will remain untouched, no transformation 
+        # to and from UTF-8 will happen.
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'objectGUID':u'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        response = conn.search('base', 'scope')
+        self.assertEqual(response['size'], 1)
+        results = response['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], {'objectGUID': u'a', 'dn': 'dn'})
+
+    # XXX search: test search nonstring values
     # XXX need tests for insert, delete, and modify
 
 class DummyLDAPObjectFactory:
@@ -115,7 +161,10 @@ class DummyLDAPObjectFactory:
         self.searched = True
         if attrs is not None:
             if self.search_exc:
-                raise self.search_exc[0](self.search_exc[1])
+                exception = self.search_exc[0](self.search_exc[1])
+                # clear out the exception to prevent looping
+                self.search_exc = None
+                raise exception
         return self.res
 
     def result(self, all):
