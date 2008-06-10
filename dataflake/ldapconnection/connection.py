@@ -186,6 +186,13 @@ class LDAPConnection(object):
 
     def insert(self, base, rdn, attrs=None):
         """ Insert a new record 
+
+        attrs is expected to be a mapping where the value may be a string
+        or a sequence of strings. 
+        Multiple values may be expressed as a single string if the values 
+        are semicolon-delimited.
+        Values can be marked as binary values, meaning they are not encoded
+        as UTF-8, by appending ';binary' to the key.
         """
         if self.read_only:
             raise RuntimeError(

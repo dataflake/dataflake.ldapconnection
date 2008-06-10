@@ -137,14 +137,73 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], {'objectGUID': u'a', 'dn': 'dn'})
 
+    def test_insert(self):
+        attributes = { 'cn' : 'jens'
+                     , 'multivaluestring' : 'val1;val2;val3'
+                     , 'multivaluelist' : ['val1', 'val2']
+                     }
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.insert('dc=localhost', 'cn=jens', attrs=attributes)
+        self.failUnless(of.added)
+        self.assertEqual(len(of.added_values.keys()), 1)
+        dn, values = of.added_values.items()[0]
+        self.assertEqual(dn, 'cn=jens' + ',' + 'dc=localhost')
+        self.assertEqual(values['cn'], ['jens'])
+        self.assertEqual(values['multivaluestring'], ['val1','val2','val3'])
+        self.assertEqual(values['multivaluelist'], ['val1','val2'])
+
+    def test_insert_readonly(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory, read_only=True)
+        self.assertRaises(RuntimeError, conn.insert, 'dc=localhost', 'cn=jens')
+
+    def test_insert_referral(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        import ldap
+        of.add_exc = ( ldap.REFERRAL
+                     , {'info':'please go to ldap://otherhost:1389'}
+                     )
+        def factory(conn_string):
+            of.conn_string = conn_string
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.insert('dc=localhost', 'cn=jens', attrs={'cn':['jens']})
+        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
+        self.failUnless(of.added)
+        self.assertEqual(len(of.added_values.keys()), 1)
+        dn, values = of.added_values.items()[0]
+        self.assertEqual(dn, 'cn=jens' + ',' + 'dc=localhost')
+        self.assertEqual(values['cn'], ['jens'])
+
+    def test_insert_binary(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn.insert('dc=localhost', 'cn=jens', {'myvalue;binary' : u'a'})
+        self.failUnless(of.added)
+        self.assertEqual(len(of.added_values.keys()), 1)
+        dn, values = of.added_values.items()[0]
+        self.assertEqual(values['myvalue'], u'a')
+
     # XXX search: test search nonstring values
-    # XXX need tests for insert, delete, and modify
+    # XXX need tests for delete, and modify
 
 class DummyLDAPObjectFactory:
     searched = False
     res = ()
     search_exc = None
     partial = None
+    added = None
+    add_exc = None
     def __init__(self, conn_string):
         self.conn_string = conn_string
         self.options = []
@@ -169,6 +228,17 @@ class DummyLDAPObjectFactory:
 
     def result(self, all):
         return self.partial
+
+    def add_s(self, dn, attributes):
+        self.added = True
+        if self.add_exc:
+            exception = self.add_exc[0](self.add_exc[1])
+            # clear out the exception to prevent looping
+            self.add_exc = None
+            raise exception
+        added = getattr(self, 'added_values', {})
+        added.update({dn:dict(attributes)})
+        self.added_values = added
 
 def test_suite():
     import sys
