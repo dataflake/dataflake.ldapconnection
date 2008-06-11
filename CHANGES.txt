@@ -1,8 +1,7 @@
-=======================================
-Change log for dataflake.ldapconnection
-=======================================
+Changelog for dataflake.ldapconnection
+======================================
 
-0.1 (unreleased)
+0.1 (2008-06-11)
 ----------------
 
 Initial release.
