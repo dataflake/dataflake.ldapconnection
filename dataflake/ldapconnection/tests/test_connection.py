@@ -412,7 +412,6 @@ class ConnectionTests(unittest.TestCase):
         self.failUnless(of.deleted)
         self.assertEqual(of.deleted_dn, 'dn')
 
-    # XXX search: test search nonstring values
 
 def test_suite():
     import sys

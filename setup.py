@@ -20,15 +20,16 @@ use_setuptools()
 
 from setuptools import setup, find_packages
 
-here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.txt')).read()
+def read(*rnames):
+    return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
+
 
 setup(name='dataflake.ldapconnection',
       version=__version__,
       description='LDAP connection library',
-      long_description=README,
+      long_description=read('README.txt') + '\n\n' + read('CHANGES.txt'),
       classifiers=[
-        "Development Status :: 1 - Planning",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Zope Public License",
         "Operating System :: OS Independent",
@@ -36,9 +37,9 @@ setup(name='dataflake.ldapconnection',
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
         ],
-      keywords='ldap',
+      keywords='ldap,ldapv3',
       author="Agendaless Consulting and Jens Vagelpohl",
-      url="http://www.dataflake.org/software/dataflake.ldapconnection",
+      url="http://pypi.python.org/pypi/dataflake.ldapconnection",
       license="ZPL 2.1 (http://www.zope.org/Resources/License/ZPL-2.1)",
       packages=find_packages(),
       include_package_data=True,
