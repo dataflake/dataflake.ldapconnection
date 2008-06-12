@@ -23,11 +23,15 @@ from setuptools import setup, find_packages
 def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
+_boundary = '\n' + ('-' * 60) + '\n'
 
 setup(name='dataflake.ldapconnection',
       version=__version__,
       description='LDAP connection library',
-      long_description=read('README.txt') + '\n\n' + read('CHANGES.txt'),
+      long_description=( read('README.txt') 
+                       + _boundary + read('CHANGES.txt')
+                       + _boundary + "\nDownload\n========"
+                       ),
       classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -37,7 +41,7 @@ setup(name='dataflake.ldapconnection',
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
         ],
-      keywords='ldap,ldapv3',
+      keywords='ldap ldapv3',
       author="Agendaless Consulting and Jens Vagelpohl",
       url="http://pypi.python.org/pypi/dataflake.ldapconnection",
       license="ZPL 2.1 (http://www.zope.org/Resources/License/ZPL-2.1)",
