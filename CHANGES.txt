@@ -1,7 +1,7 @@
 Changelog for dataflake.ldapconnection
 ======================================
 
-0.2 (unreleased)
+0.2 (2008-08-27)
 ----------------
 
 - backport a fix applied to the LDAPUserFolder FakeLDAP module to handle

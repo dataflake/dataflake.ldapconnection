@@ -11,7 +11,7 @@
 #
 ##############################################################################
 
-__version__ = '0.2dev'
+__version__ = '0.2'
 
 import os
 
@@ -23,14 +23,16 @@ from setuptools import setup, find_packages
 def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
-_boundary = '\n' + ('-' * 60) + '\n'
+_boundary = '\n' + ('-' * 60) + '\n\n'
 
 setup(name='dataflake.ldapconnection',
       version=__version__,
       description='LDAP connection library',
       long_description=( read('README.txt') 
-                       + _boundary + read('CHANGES.txt')
-                       + _boundary + "\nDownload\n========"
+                       + _boundary 
+                       + read('CHANGES.txt')
+                       + _boundary 
+                       + "Download\n========"
                        ),
       classifiers=[
         "Development Status :: 3 - Alpha",
