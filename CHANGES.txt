@@ -4,6 +4,9 @@ Changelog for dataflake.ldapconnection
 0.2 (unreleased)
 ----------------
 
+- backport a fix applied to the LDAPUserFolder FakeLDAP module to handle
+  BASE-scoped searches on a DN.
+
 
 0.1 (2008-06-11)
 ----------------
