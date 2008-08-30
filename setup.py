@@ -11,7 +11,7 @@
 #
 ##############################################################################
 
-__version__ = '0.3'
+__version__ = '0.4dev'
 
 import os
 
@@ -45,6 +45,7 @@ setup(name='dataflake.ldapconnection',
         ],
       keywords='ldap ldapv3',
       author="Agendaless Consulting and Jens Vagelpohl",
+      author_email="jens@dataflake.org",
       url="http://pypi.python.org/pypi/dataflake.ldapconnection",
       license="ZPL 2.1 (http://www.zope.org/Resources/License/ZPL-2.1)",
       packages=find_packages(),
