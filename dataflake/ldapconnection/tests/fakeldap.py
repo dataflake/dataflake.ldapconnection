@@ -39,6 +39,15 @@ MOD_DELETE = getattr(ldap, 'MOD_DELETE')
 REFERRAL = getattr(ldap, 'REFERRAL')
 TIMEOUT = getattr(ldap, 'TIMEOUT')
 
+LDAPError = ldap.LDAPError
+SERVER_DOWN = ldap.SERVER_DOWN
+PROTOCOL_ERROR = ldap.PROTOCOL_ERROR
+NO_SUCH_OBJECT = ldap.NO_SUCH_OBJECT
+INVALID_CREDENTIALS = ldap.INVALID_CREDENTIALS
+ALREADY_EXISTS = ldap.ALREADY_EXISTS
+SIZELIMIT_EXCEEDED = ldap.SIZELIMIT_EXCEEDED
+PARTIAL_RESULTS = ldap.PARTIAL_RESULTS
+
 OPT_PROTOCOL_VERSION = None
 OPT_REFERRALS = None
 OPT_NETWORK_TIMEOUT = None
@@ -83,15 +92,6 @@ FULL = '\((?P<op>(%s))(?P<fltr>.*)\)' % _OP
 
 OP_RE = re.compile(OP)
 FULL_RE = re.compile(FULL)
-
-class LDAPError(Exception): pass
-class SERVER_DOWN(Exception): pass
-class PROTOCOL_ERROR(Exception): pass
-class NO_SUCH_OBJECT(Exception): pass
-class INVALID_CREDENTIALS(Exception): pass
-class ALREADY_EXISTS(Exception): pass
-class SIZELIMIT_EXCEEDED(Exception): pass
-class PARTIAL_RESULTS(Exception): pass
 
 class Op(object):
 

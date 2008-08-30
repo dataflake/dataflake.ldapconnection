@@ -4,6 +4,10 @@ Changelog for dataflake.ldapconnection
 0.3 (unreleased)
 ----------------
 
+- fakeldap: no longer override the LDAP exceptions, just get them from
+  python-ldap.
+  (http://www.dataflake.org/tracker/issue_00620)
+
 
 0.2 (2008-08-27)
 ----------------
