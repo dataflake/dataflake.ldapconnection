@@ -551,12 +551,15 @@ class FakeLDAPConnection:
                 rec[mod[1]] = cur_val
             else:
                 if rec.has_key(mod[1]):
-                    cur_vals = rec[mod[1]]
-                    for removed in mod[2]:
-                        if removed in cur_vals:
-                            cur_vals.remove(removed)
+                    if mod[2] is None:
+                        del rec[mod[1]]
+                    else:
+                        cur_vals = rec[mod[1]]
+                        for removed in mod[2]:
+                            if removed in cur_vals:
+                                cur_vals.remove(removed)
 
-                    rec[mod[1]] = cur_vals
+                        rec[mod[1]] = cur_vals
 
         tree_pos[rdn] = rec
 

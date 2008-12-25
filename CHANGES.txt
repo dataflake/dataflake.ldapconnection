@@ -1,9 +1,17 @@
 Changelog for dataflake.ldapconnection
 ======================================
 
-0.4 (unreleased)
+0.4 (2008-12-25)
 ----------------
 
+- fakeldap bug: the modify_s method would expect changes of type MOD_DELETE
+  to come with a list of specific attribute values to delete. Now the 
+  attribute will be deleted as a whole if the expected list is None, this
+  reflects actual python-ldap behavior better.
+
+- now we are exercising the fakeldap doctests from within this package,
+  they used to be run from Products.LDAPUserFolder, which was not cleaned
+  up when the fakeldap module moved to dataflake.ldapconnection.
 
 0.3 (2008-08-30)
 ----------------
