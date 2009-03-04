@@ -11,7 +11,7 @@
 #
 ##############################################################################
 
-__version__ = '0.5dev'
+__version__ = '1.0dev'
 
 import os
 
@@ -56,7 +56,8 @@ setup(name='dataflake.ldapconnection',
               'python-ldap',
               ],
       install_requires=[
-              'python-ldap'
+              'python-ldap',
+              'zope.interface'
               ],
       test_suite='dataflake.ldapconnection.tests',
       )

@@ -17,55 +17,78 @@ $Id: test_connection.py 1485 2008-06-04 16:08:38Z jens $
 
 import unittest
 
+from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 
-class ConnectionTests(unittest.TestCase):
-    def _getTargetClass(self):
-        from dataflake.ldapconnection.connection import LDAPConnection
-        return LDAPConnection
+class ConnectionTests(LDAPConnectionTests):
 
-    def _makeOne(self, *args, **kw):
-        conn = self._getTargetClass()(*args, **kw)
-        return conn
+    def test_conformance(self):
+        # Test to see if the given class implements the ILDAPConnection
+        # interface completely.
+        from zope.interface.verify import verifyClass
+        from dataflake.ldapconnection.interfaces import ILDAPConnection
+        verifyClass(ILDAPConnection, self._getTargetClass())
 
-    def _makeSimple(self):
-        conn = self._makeOne('host', 636, 'ldap', DummyLDAPObjectFactory)
-        return conn
-
-    def test_ctor(self):
+    def test_constructor_defaults(self):
         conn = self._makeSimple()
-        self.assertEqual(conn.server['host'], 'host')
-        self.assertEqual(conn.server['port'], 636)
-        self.assertEqual(conn.server['protocol'], 'ldap')
-        self.assertEqual(conn.server['conn_timeout'], -1)
-        self.assertEqual(conn.server['op_timeout'], -1)
+        self.assertEqual(conn.rdn_attr, '')
+        self.assertEqual(conn.bind_dn, '')
+        self.assertEqual(conn.bind_pwd, '')
+        self.failIf(conn.read_only)
+        self.assertEqual(conn.conn, None)
+        self.assertEqual(conn.c_factory, DummyLDAPObjectFactory)
+        self.assertEqual(conn.logger, None)
+
+    def test_constructor(self):
+        conn = self._makeOne( 'localhost'
+                            , 389
+                            , 'ldap'
+                            , 'factory'
+                            , rdn_attr='cn'
+                            , bind_dn='user'
+                            , bind_pwd='foo'
+                            , read_only=True
+                            , conn_timeout=5
+                            , op_timeout=10
+                            , logger='logger'
+                            )
+        self.assertEqual(conn.rdn_attr, 'cn')
+        self.assertEqual(conn.bind_dn, 'user')
+        self.assertEqual(conn.bind_pwd, 'foo')
+        self.failUnless(conn.read_only)
+        self.assertEqual(conn.conn, None)
+        self.assertEqual(conn.c_factory, 'factory')
+        self.assertEqual(conn.logger, 'logger')
 
     def test_connect_initial_noargs(self):
         conn = self._makeSimple()
         conn = conn.connect()
         self.assertEqual(conn.binduid, '')
         self.assertEqual(conn.bindpwd, '')
-        self.assertEqual(conn.searched, True)
 
     def test_connect_initial_bind_dn_not_None(self):
         conn = self._makeSimple()
         conn = conn.connect('foo', '')
         self.assertEqual(conn.binduid, 'foo')
         self.assertEqual(conn.bindpwd, '')
-        self.assertEqual(conn.searched, True)
-
-    def test_connect_initial_bindpwd_not_None(self):
-        conn = self._makeSimple()
-        conn = conn.connect(None, 'pass')
-        self.assertEqual(conn.binduid, '')
-        self.assertEqual(conn.bindpwd, 'pass')
-        self.assertEqual(conn.searched, True)
 
     def test_connect_non_initial(self):
         conn = self._makeSimple()
         conn.conn = DummyLDAPObjectFactory('conn_string')
         conn = conn.connect(None, 'pass')
         self.assertEqual(conn.conn_string, 'conn_string')
+
+    def test_search_noauthentication(self):
+        conn = self._makeSimple()
+        response = conn.search('base', 'scope')
+        self.assertEqual(conn.conn.binduid, '')
+        self.assertEqual(conn.conn.bindpwd, '')
+
+    def test_search_authentication(self):
+        conn = self._makeSimple()
+        response = conn.search('base', 'scope', bind_dn='user', bind_pwd='foo')
+        self.assertEqual(conn.conn.binduid, 'user')
+        self.assertEqual(conn.conn.bindpwd, 'foo')
 
     def test_search_simple(self):
         of = DummyLDAPObjectFactory('conn_string')
@@ -139,29 +162,40 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], {'objectGUID': u'a', 'dn': 'dn'})
 
+    def test_insert_noauthentication(self):
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=jens', attrs={})
+        self.assertEqual(conn.conn.binduid, '')
+        self.assertEqual(conn.conn.bindpwd, '')
+
+    def test_insert_authentication(self):
+        conn = self._makeSimple()
+        conn.insert( 'dc=localhost'
+                   , 'cn=jens'
+                   , attrs={}
+                   , bind_dn='user'
+                   , bind_pwd='foo'
+                   )
+        self.assertEqual(conn.conn.binduid, 'user')
+        self.assertEqual(conn.conn.bindpwd, 'foo')
+
     def test_insert(self):
         attributes = { 'cn' : 'jens'
                      , 'multivaluestring' : 'val1;val2;val3'
                      , 'multivaluelist' : ['val1', 'val2']
                      }
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', attrs=attributes)
-        self.failUnless(of.added)
-        self.assertEqual(len(of.added_values.keys()), 1)
-        dn, values = of.added_values.items()[0]
+        self.failUnless(conn.conn.added)
+        self.assertEqual(len(conn.conn.added_values.keys()), 1)
+        dn, values = conn.conn.added_values.items()[0]
         self.assertEqual(dn, 'cn=jens' + ',' + 'dc=localhost')
         self.assertEqual(values['cn'], ['jens'])
         self.assertEqual(values['multivaluestring'], ['val1','val2','val3'])
         self.assertEqual(values['multivaluelist'], ['val1','val2'])
 
     def test_insert_readonly(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory, read_only=True)
+        conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
         self.assertRaises(RuntimeError, conn.insert, 'dc=localhost', 'cn=jens')
 
     def test_insert_referral(self):
@@ -186,15 +220,39 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(values['cn'], ['jens'])
 
     def test_insert_binary(self):
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=jens', {'myvalue;binary' : u'a'})
+        self.failUnless(conn.conn.added)
+        self.assertEqual(len(conn.conn.added_values.keys()), 1)
+        dn, values = conn.conn.added_values.items()[0]
+        self.assertEqual(values['myvalue'], u'a')
+
+    def test_modify_noauthentication(self):
         of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
         def factory(conn_string):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.insert('dc=localhost', 'cn=jens', {'myvalue;binary' : u'a'})
-        self.failUnless(of.added)
-        self.assertEqual(len(of.added_values.keys()), 1)
-        dn, values = of.added_values.items()[0]
-        self.assertEqual(values['myvalue'], u'a')
+        import ldap
+        conn.modify('dn', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
+        self.assertEqual(of.binduid, '')
+        self.assertEqual(of.bindpwd, '')
+
+    def test_modify_authentication(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        of.res = [ ('dn', {'a':'a'}) ]
+        def factory(conn_string):
+            return of
+        conn = self._makeOne('host', 636, 'ldap', factory)
+        import ldap
+        conn.modify( 'dn'
+                   , mod_type=ldap.MOD_ADD
+                   , attrs={'b':'b'}
+                   , bind_dn='user'
+                   , bind_pwd='foo'
+                   )
+        self.assertEqual(of.binduid, 'user')
+        self.assertEqual(of.bindpwd, 'foo')
 
     def test_modify_explicit_add(self):
         of = DummyLDAPObjectFactory('conn_string')
@@ -319,11 +377,7 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_readonly(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory, read_only=True)
+        conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
         self.assertRaises(RuntimeError, conn.modify, 'dn', {})
 
     def test_modify_binary(self):
@@ -381,20 +435,26 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(key, 'a')
         self.assertEqual(values, ['y'])
 
-    def test_delete(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+    def test_delete_noauthentication(self):
+        conn = self._makeSimple()
         conn.delete('dn')
-        self.failUnless(of.deleted)
-        self.assertEqual(of.deleted_dn, 'dn')
+        self.assertEqual(conn.conn.binduid, '')
+        self.assertEqual(conn.conn.bindpwd, '')
+
+    def test_delete_authentication(self):
+        conn = self._makeSimple()
+        conn.delete('dn', bind_dn='user', bind_pwd='foo')
+        self.assertEqual(conn.conn.binduid, 'user')
+        self.assertEqual(conn.conn.bindpwd, 'foo')
+
+    def test_delete(self):
+        conn = self._makeSimple()
+        conn.delete('dn')
+        self.failUnless(conn.conn.deleted)
+        self.assertEqual(conn.conn.deleted_dn, 'dn')
 
     def test_delete_readonly(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory, read_only=True)
+        conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
         self.assertRaises(RuntimeError, conn.delete, 'dn')
 
     def test_delete_referral(self):

@@ -28,6 +28,8 @@ class DummyLDAPObjectFactory:
     deleted = False
     del_exc = None
     deleted_dn = None
+    binduid = ''
+    bindpwd = ''
     def __init__(self, conn_string):
         self.conn_string = conn_string
         self.options = []
@@ -42,12 +44,13 @@ class DummyLDAPObjectFactory:
 
     def search_s(self, dn, scope, klass, attrs=None):
         self.searched = True
-        if attrs is not None:
-            if self.search_exc:
-                exception = self.search_exc[0](self.search_exc[1])
-                # clear out the exception to prevent looping
-                self.search_exc = None
-                raise exception
+
+        if self.search_exc:
+            exception = self.search_exc[0](self.search_exc[1])
+            # clear out the exception to prevent looping
+            self.search_exc = None
+            raise exception
+
         return self.res
 
     def result(self, all):

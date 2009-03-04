@@ -1,8 +1,23 @@
 Changelog for dataflake.ldapconnection
 ======================================
 
-0.5 (unreleased)
+1.0 (unreleased)
 ----------------
+
+- added an interfaces file as documentation and "contract". This adds 
+  a dependency on zope.interface.
+
+- removed unused argument "login_attr" from constructor argument list
+
+- LDAPConnection objects now accept more than a single server definition.
+  Failover between connections is triggered by connection or operation
+  timeouts. Added API to add and remove server definitions at runtime.
+
+- all those methods causing LDAP operations to be performed accept 
+  optional bind_dn and bind_pwd named arguments to rebind with the 
+  provided credentials instead of those credentials stored in the 
+  LDAPConnection instance. This represents an API change for the 
+  `insert`, `modify` and `delete` methods.
 
 
 0.4 (2008-12-25)
