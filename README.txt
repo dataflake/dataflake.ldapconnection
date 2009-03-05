@@ -14,7 +14,7 @@ more than one LDAP server.
 Documentation
 =============
 You can browse web-based documentation for this package at
-http://docs.zope.org/dataflake.ldapconnection
+http://docs.dataflake.org/dataflake.ldapconnection
 
 
 Bug tracker
