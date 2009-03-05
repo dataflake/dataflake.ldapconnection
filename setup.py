@@ -56,6 +56,7 @@ setup(name='dataflake.ldapconnection',
               'python-ldap',
               ],
       install_requires=[
+              'setuptools',
               'python-ldap',
               'zope.interface'
               ],
