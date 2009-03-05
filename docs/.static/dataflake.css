@@ -1,0 +1,38 @@
+@import url('default.css');
+body {
+    background-color: #FDFDFD;
+    color: #333333;
+}
+
+div.body h1, div.body h2, div.body h3, div.body h4, div.body h5, div.body h6 {
+    color: #333333;
+}
+ 
+div.document {
+    background-color: #FDFDFD;
+}
+
+div.sphinxsidebar h3,h4,h5,li,a {
+    color: #333333 !important;
+}
+
+div.documentwrapper {
+    background-color: #DCDDDE;
+}
+
+div.related {
+    color: #FDFDFD !important;
+    background-color: #333333;
+}
+ 
+div.related a, div.related li {
+    color: #FDFDFD !important;
+}
+
+span.pre {
+    font-weight: bold;
+}
+
+div.footer {
+    color: #333333;
+}
