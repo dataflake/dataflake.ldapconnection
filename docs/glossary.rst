@@ -22,5 +22,5 @@ Glossary
     Python.  `virtualenv <http://pypi.python.org/pypi/virtualenv>`_
     was created by Ian Bicking.
   python-ldap
-    The `python-ldap <http://python-ldap.sourceforge.net>_` library is 
+    The `python-ldap <http://python-ldap.sourceforge.net>`_ library is 
     used to communicate with LDAP servers.
