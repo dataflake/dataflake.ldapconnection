@@ -1,5 +1,5 @@
-Changelog for dataflake.ldapconnection
-======================================
+Change log
+==========
 
 1.0 (unreleased)
 ----------------

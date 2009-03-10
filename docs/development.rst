@@ -21,4 +21,6 @@ URL to retrieve the latest development code as Python egg::
 
   http://svn.dataflake.org/svn/dataflake.ldapconnection/trunk#egg=dataflake.ldapconnection
 
-
+Change log
+----------
+.. literalinclude:: ../CHANGES.txt
