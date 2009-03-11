@@ -5,11 +5,24 @@
     <li><a href="{{ pathto(master_doc) }}">{{ project }} v{{ release }}</a>{{ reldelim1 }}</li>
 {% endblock %}
 
-{% block sidebarrel %}
-  {{ super() }}
+{%- block sidebartoc %}
+  <h3><a href="{{ pathto(master_doc) }}">{{ _('Table Of Contents') }}</a></h3>
+  {{ toc }}
+{%- endblock %}
 
-  <h4><a href="{{ project }}.pdf">Download as PDF</a></h4>
-  <br/>
+{% block sidebarrel %}
+  {%- if prev %}
+    <h3>Previous topic</h3>
+    <ul>
+      <li><a href="{{ prev.link|e }}" title="{{ _('previous chapter') }}">{{ prev.title }}</a></li>
+    </ul>
+  {%- endif %}
+  {%- if next %}
+    <h3>Next topic</h3>
+    <ul>
+      <li><a href="{{ next.link|e }}" title="{{ _('next chapter') }}">{{ next.title }}</a></li>
+    </ul>
+  {%- endif %}
 
   <h3>Related links</h3>
   <ul>
@@ -20,3 +33,9 @@
   </ul>
 {% endblock %}
 
+{%- block sidebarsearch %}
+  {{ super() }}
+
+  <br/>
+  <h3><a href="{{ project }}.pdf">Download as PDF</a></h3>
+{% endblock %}

@@ -1,8 +1,8 @@
 .. _index:
 
-========================
-dataflake.ldapconnection
-========================
+=============
+Documentation
+=============
 
 :mod:`dataflake.ldapconnection` provides an abstraction layer on top 
 of :term:`python-ldap`. It offers a connection object with simplified 
