@@ -1,5 +1,5 @@
-Installing :mod:`dataflake.ldapconnection`
-==========================================
+Installation
+============
 
 How To Install
 --------------
