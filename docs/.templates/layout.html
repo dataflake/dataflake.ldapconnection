@@ -1,11 +1,22 @@
 {% extends "!layout.html" %}
-{% block sidebartoc %}
-  <h3>Project links</h3>
-  <ul>
-    <li><a class="reference external" href="http://pypi.python.org/pypi/dataflake.ldapconnection/">Project Home</a></li>
-    <li><a class="reference external" href="http://svn.dataflake.org/viewvc/dataflake.ldapconnection/">Source code</a></li>
-    <li><a class="reference external" href="http://www.dataflake.org/tracker/">Bug tracker</a></li>
-  </ul>
+
+{% block rootrellink %}
+    <li><a href="http://docs.dataflake.org/">docs.dataflake.org</a>{{ reldelim1 }}</li>
+    <li><a href="{{ pathto(master_doc) }}">{{ project }} v{{ release }}</a>{{ reldelim1 }}</li>
+{% endblock %}
+
+{% block sidebarrel %}
   {{ super() }}
+
+  <h4><a href="{{ project }}.pdf">Download as PDF</a></h4>
+  <br/>
+
+  <h3>Related links</h3>
+  <ul>
+    <li><a class="reference external" href="http://pypi.python.org/pypi/{{ project|e }}/">Project home</a></li>
+    <li><a class="reference external" href="http://svn.dataflake.org/viewvc/{{ project|e }}/">Browse sources</a></li>
+    <li><a class="reference external" href="http://www.dataflake.org/tracker/">Bug tracker</a></li>
+    <li><a class="reference external" href="http://www.zetwork.com/">Commercial support</a></li>
+  </ul>
 {% endblock %}
 

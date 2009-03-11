@@ -150,7 +150,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'dataflakeldapconnectiondoc'
+htmlhelp_basename = 'dataflakeldapconnection'
 
 
 # Options for LaTeX output
@@ -165,7 +165,7 @@ htmlhelp_basename = 'dataflakeldapconnectiondoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'dataflakeldapconnection.tex', 'dataflake.ldapconnection Documentation', 'Jens Vagelpohl', 'manual'),
+  ('index', 'dataflake.ldapconnection.tex', 'dataflake.ldapconnection Documentation', 'Jens Vagelpohl', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
