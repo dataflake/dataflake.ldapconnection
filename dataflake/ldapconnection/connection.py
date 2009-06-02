@@ -94,11 +94,10 @@ class LDAPConnection(object):
                                          , conn_timeout=server['conn_timeout']
                                          , op_timeout=server['op_timeout']
                                          )
+                return self.conn
         else:
             self.conn.simple_bind_s(bind_dn, bind_pwd)
-
-        #XXX self.conn.search_s(user_dn, ldap.SCOPE_BASE, '(objectClass=*)')
-        return self.conn
+            return self.conn
 
     def _connect( self
                 , connection_string
