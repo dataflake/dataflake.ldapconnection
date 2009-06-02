@@ -93,7 +93,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_search_simple(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         response = conn.search('base', 'scope')
@@ -111,7 +111,7 @@ class ConnectionTests(LDAPConnectionTests):
                  , ('dn3','anotheruselessvalue')
                  , ('dn4', ('morebadstuff',))
                  ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         response = conn.search('base', 'scope')
@@ -125,7 +125,7 @@ class ConnectionTests(LDAPConnectionTests):
         of.partial = (None, [('dn', {'a':'a'})])
         import ldap
         of.search_exc = (ldap.PARTIAL_RESULTS, '')
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         response = conn.search('base', 'scope')
@@ -141,7 +141,7 @@ class ConnectionTests(LDAPConnectionTests):
         of.search_exc = ( ldap.REFERRAL
                         , {'info':'please go to ldap://otherhost:1389'}
                         )
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
@@ -153,7 +153,7 @@ class ConnectionTests(LDAPConnectionTests):
         # to and from UTF-8 will happen.
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'objectGUID':u'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         response = conn.search('base', 'scope')
@@ -200,14 +200,14 @@ class ConnectionTests(LDAPConnectionTests):
 
     def test_insert_referral(self):
         of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
         of.add_exc = ( ldap.REFERRAL
                      , {'info':'please go to ldap://otherhost:1389'}
                      )
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
@@ -230,7 +230,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_noauthentication(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
@@ -241,7 +241,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_authentication(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
@@ -257,7 +257,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_explicit_add(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
@@ -277,7 +277,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_explicit_modify(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
@@ -298,7 +298,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_explicit_delete(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
@@ -318,7 +318,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_implicit_add(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         conn.modify('dn', attrs={'b':'b'})
@@ -338,7 +338,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_implicit_modify(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         conn.modify('dn', attrs={'a':'y'})
@@ -359,7 +359,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_implicit_delete(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         conn.modify('dn', attrs={'a':''})
@@ -383,7 +383,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_binary(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         conn.modify('dn', attrs={'a;binary':u'y'})
@@ -397,7 +397,7 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_modrdn(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('a=oldvalue,dc=localhost', {'a':'oldvalue'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory, rdn_attr='a')
         conn.modify('a=oldvalue,dc=localhost', attrs={'a':'newvalue'})
@@ -414,14 +414,14 @@ class ConnectionTests(LDAPConnectionTests):
     def test_modify_referral(self):
         of = DummyLDAPObjectFactory('conn_string')
         of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
         of.mod_exc = ( ldap.REFERRAL
                      , {'info':'please go to ldap://otherhost:1389'}
                      )
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
@@ -463,7 +463,7 @@ class ConnectionTests(LDAPConnectionTests):
         of.del_exc = ( ldap.REFERRAL
                      , {'info':'please go to ldap://otherhost:1389'}
                      )
-        def factory(conn_string):
+        def factory(conn_string, who='', cred=''):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)

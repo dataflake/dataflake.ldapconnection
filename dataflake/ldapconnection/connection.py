@@ -25,6 +25,7 @@ except ImportError:
     # python-ldap < 2.3.x
     from ldap import explode_dn
 from ldap.dn import escape_dn_chars
+from ldap.ldapobject import SmartLDAPObject
 from ldapurl import LDAPUrl
 from ldapurl import isLDAPUrl
 
@@ -43,9 +44,9 @@ class LDAPConnection(object):
 
     implements(ILDAPConnection)
 
-    def __init__( self, host, port, protocol, c_factory, rdn_attr=''
-                , bind_dn='', bind_pwd='', read_only=False, conn_timeout=-1
-                , op_timeout=-1, logger=None
+    def __init__( self, host, port, protocol, c_factory=SmartLDAPObject
+                , rdn_attr='', bind_dn='', bind_pwd='', read_only=False
+                , conn_timeout=-1, op_timeout=-1, logger=None
                 ):
         """ LDAPConnection initialization
         """
@@ -108,13 +109,7 @@ class LDAPConnection(object):
                 ):
         """ Factored out to allow usage by other pieces 
         """
-        connection = self.c_factory(connection_string)
-
-        # Set the protocol version - version 3 is preferred
-        try:
-            connection.set_option(ldap.OPT_PROTOCOL_VERSION, ldap.VERSION3)
-        except ldap.LDAPError: # Invalid protocol version, fall back safely
-            connection.set_option(ldap.OPT_PROTOCOL_VERSION, ldap.VERSION2)
+        connection = self.c_factory(connection_string,who=user_dn,cred=user_pwd)
 
         # Deny auto-chasing of referrals to be safe, we handle them instead
         try:
@@ -129,9 +124,6 @@ class LDAPConnection(object):
         # Set the operations timeout
         if op_timeout > 0:
             connection.timeout = op_timeout
-
-        # Now bind with the credentials given. Let exceptions propagate out.
-        connection.simple_bind_s(user_dn, user_pwd)
 
         return connection
 

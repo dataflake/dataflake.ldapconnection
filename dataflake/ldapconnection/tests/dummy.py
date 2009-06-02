@@ -28,10 +28,11 @@ class DummyLDAPObjectFactory:
     deleted = False
     del_exc = None
     deleted_dn = None
-    binduid = ''
-    bindpwd = ''
-    def __init__(self, conn_string):
+
+    def __init__(self, conn_string, who='', cred=''):
         self.conn_string = conn_string
+        self.binduid = who
+        self.bindpwd = cred
         self.options = []
 
     def set_option(self, option, value):
