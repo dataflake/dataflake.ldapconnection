@@ -66,6 +66,13 @@ class ILDAPConnection(Interface):
         Raises RuntimeError if no server definitions are available.
         """
 
+    def bind(connection, bind_dn, bind_pwd):
+        """ Attempt a bind operation on the provided connection object
+
+        If the last bind credentials are the same as the currently 
+        required credentials the LDAP server will not be contacted.
+        """
+
     def search( base
               , scope
               , filter='(objectClass=*)'

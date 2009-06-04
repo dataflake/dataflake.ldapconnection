@@ -21,39 +21,6 @@ import ldap
 import re
 import sha
 
-try:
-    set
-except NameError:
-    from sets import Set as set
-
-# Module-level stuff
-__version__ = '2.fake'
-
-SCOPE_BASE = getattr(ldap, 'SCOPE_BASE')
-SCOPE_ONELEVEL = getattr(ldap, 'SCOPE_ONELEVEL')
-SCOPE_SUBTREE = getattr(ldap, 'SCOPE_SUBTREE')
-
-MOD_ADD = getattr(ldap, 'MOD_ADD')
-MOD_REPLACE = getattr(ldap, 'MOD_REPLACE')
-MOD_DELETE = getattr(ldap, 'MOD_DELETE')
-REFERRAL = getattr(ldap, 'REFERRAL')
-TIMEOUT = getattr(ldap, 'TIMEOUT')
-
-LDAPError = ldap.LDAPError
-SERVER_DOWN = ldap.SERVER_DOWN
-PROTOCOL_ERROR = ldap.PROTOCOL_ERROR
-NO_SUCH_OBJECT = ldap.NO_SUCH_OBJECT
-INVALID_CREDENTIALS = ldap.INVALID_CREDENTIALS
-ALREADY_EXISTS = ldap.ALREADY_EXISTS
-SIZELIMIT_EXCEEDED = ldap.SIZELIMIT_EXCEEDED
-PARTIAL_RESULTS = ldap.PARTIAL_RESULTS
-
-OPT_PROTOCOL_VERSION = None
-OPT_REFERRALS = None
-OPT_NETWORK_TIMEOUT = None
-VERSION2 = None
-VERSION3 = None
-
 # From http://www.ietf.org/rfc/rfc2254.txt, Section 4
 #
 # filter     = "(" filtercomp ")"
@@ -388,6 +355,8 @@ class FakeLDAPConnection:
         pass
 
     def simple_bind_s(self, binduid, bindpwd):
+        self._last_bind = (self.simple_bind_s, (binduid, bindpwd), {})
+
         if binduid.find('Manager') != -1:
             return 1
 
@@ -407,15 +376,14 @@ class FakeLDAPConnection:
                 break
 
         if not rec_pwd:
-            raise INVALID_CREDENTIALS
+            raise ldap.INVALID_CREDENTIALS
 
         if enc_bindpwd == rec_pwd:
             return 1
         else:
-            raise INVALID_CREDENTIALS
+            raise ldap.INVALID_CREDENTIALS
 
-
-    def search_s(self, base, scope=SCOPE_SUBTREE,
+    def search_s(self, base, scope=ldap.SCOPE_SUBTREE,
                  query='(objectClass=*)', attrs=()):
 
         elems = explode_dn(base)
@@ -430,7 +398,7 @@ class FakeLDAPConnection:
 
         if cmp_query(q, ANY, strict=True):
             # Return all objects, no matter what class
-            if scope == SCOPE_BASE and tree_pos.get('dn', '') == base:
+            if scope == ldap.SCOPE_BASE and tree_pos.get('dn', '') == base:
                 # Only if dn matches 'base'
                 return (([base, tree_pos],))
             else:
@@ -505,7 +473,7 @@ class FakeLDAPConnection:
                 tree_pos = tree_pos[elem]
 
         if tree_pos.has_key(rdn):
-            raise ALREADY_EXISTS
+            raise ldap.ALREADY_EXISTS
         else:
             # Add rdn to attributes as well.
             k, v = rdn.split('=')
@@ -543,10 +511,10 @@ class FakeLDAPConnection:
         rec = copy.deepcopy(tree_pos.get(rdn))
 
         for mod in mod_list:
-            if mod[0] == MOD_REPLACE:
+            if mod[0] == ldap.MOD_REPLACE:
                 rec[mod[1]] = mod[2]
-            elif mod[0] == MOD_ADD:
-                cur_val = rec[mod[1]]
+            elif mod[0] == ldap.MOD_ADD:
+                cur_val = rec.get(mod[1], [])
                 cur_val.extend(mod[2])
                 rec[mod[1]] = cur_val
             else:
@@ -585,4 +553,7 @@ class ldapobject:
         def __init__(self, *ignored):
             pass
 
+    class SmartLDAPObject(FakeLDAPConnection):
+        def __init__(self, *args, **kw):
+            pass
 

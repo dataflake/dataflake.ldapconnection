@@ -16,6 +16,7 @@ $Id: utils.py 1485 2008-06-04 16:08:38Z jens $
 """
 
 import codecs
+import ldap
 
 BINARY_ATTRIBUTES = ('objectguid', 'jpegphoto')
 
@@ -41,4 +42,9 @@ try:
 
 except LookupError:
     raise LookupError, 'Unknown encoding "%s"' % encoding
+
+def escape_dn(dn):
+    """ Escape all characters that need escaping for a DN, see RFC 2253 
+    """
+    return ldap.dn.dn2str(ldap.dn.str2dn(dn))
 

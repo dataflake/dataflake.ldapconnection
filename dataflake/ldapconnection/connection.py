@@ -15,26 +15,26 @@
 Instances of this class offer a simplified API to do searches, insertions, 
 deletions or modifications.
 
-$Id: LDAPConnection.py 1485 2008-06-04 16:08:38Z jens $
+$Id$
 """
 
 import ldap
-try:
-    from ldap.dn import explode_dn
-except ImportError:
-    # python-ldap < 2.3.x
-    from ldap import explode_dn
-from ldap.dn import escape_dn_chars
+from ldap.dn import explode_dn
+from ldap.filter import filter_format
 from ldap.ldapobject import SmartLDAPObject
-from ldapurl import LDAPUrl
-from ldapurl import isLDAPUrl
+import ldapurl
+import logging
 
 from zope.interface import implements
 
 from dataflake.ldapconnection.interfaces import ILDAPConnection
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
+from dataflake.ldapconnection.utils import escape_dn
 from dataflake.ldapconnection.utils import from_utf8
 from dataflake.ldapconnection.utils import to_utf8
+
+default_logger = logging.getLogger('dataflake.ldapconnection')
+
 
 class LDAPConnection(object):
     """ LDAPConnection object
@@ -56,7 +56,7 @@ class LDAPConnection(object):
         self.read_only = read_only
         self.c_factory = c_factory
         self.conn = None
-        self.logger = logger
+        self.logger = logger or default_logger
 
         self.servers = {}
         self.addServer(host, port, protocol, conn_timeout, op_timeout)
@@ -64,7 +64,7 @@ class LDAPConnection(object):
     def addServer(self, host, port, protocol, conn_timeout=-1, op_timeout=-1):
         """ Add a server to the list of servers used
         """
-        l = LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
+        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
         server_url = l.initializeUrl()
         self.servers[server_url] = { 'url' : server_url
                                    , 'conn_timeout' : conn_timeout
@@ -72,10 +72,17 @@ class LDAPConnection(object):
                                    }
 
     def removeServer(self, host, port, protocol):
-        l = LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
+        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
         server_url = l.initializeUrl()
         if server_url in self.servers.keys():
             del self.servers[server_url]
+
+    def bind(self, ldap_conn, bind_dn, bind_pwd):
+        """ Attempt a bind operation
+        """
+        last_bind = getattr(ldap_conn, '_last_bind', (None, ((),()), {}))
+        if last_bind[1][0] != bind_dn and last_bind[1][1] != bind_pwd:
+            ldap_conn.simple_bind_s(bind_dn, bind_pwd)
 
     def connect(self, bind_dn=None, bind_pwd=None):
         """ initialize an ldap server connection 
@@ -89,16 +96,28 @@ class LDAPConnection(object):
 
         if self.conn is None:
             for server in self.servers.values():
-                self.conn = self._connect( server['url']
-                                         , bind_dn
-                                         , bind_pwd
-                                         , conn_timeout=server['conn_timeout']
-                                         , op_timeout=server['op_timeout']
-                                         )
-                return self.conn
-        else:
-            self.conn.simple_bind_s(bind_dn, bind_pwd)
-            return self.conn
+                try:
+                    self.conn = self._connect( server['url']
+                                             , bind_dn
+                                             , bind_pwd
+                                             , conn_timeout=server['conn_timeout']
+                                             , op_timeout=server['op_timeout']
+                                             )
+                    break
+                except (ldap.SERVER_DOWN, ldap.TIMEOUT), e:
+                    continue
+
+            if self.conn is None:
+                exception_string = str(e or 'no exception')
+                msg = 'Failure connecting, last attempt: %s (%s)' % (
+                            server['url'], str(e or 'no exception'))
+                self.logger.critical(msg, exc_info=1)
+
+                if e:
+                    raise e
+
+        self.bind(self.conn, bind_dn, bind_pwd)
+        return self.conn
 
     def _connect( self
                 , connection_string
@@ -130,7 +149,7 @@ class LDAPConnection(object):
     def search( self
               , base
               , scope
-              , filter='(objectClass=*)'
+              , fltr='(objectClass=*)'
               , attrs=None
               , convert_filter=True
               , bind_dn=None
@@ -138,24 +157,22 @@ class LDAPConnection(object):
               ):
         """ Search for entries in the database
         """
-        result = { 'size' : 0
-                 , 'results' : []
-                 }
+        result = {'size': 0, 'results': [], 'exception': ''}
         if convert_filter:
-            filter = to_utf8(filter)
-        base = self._clean_dn(base)
+            fltr = to_utf8(fltr)
+        base = escape_dn(base)
 
         connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
         try:
-            res = connection.search_s(base, scope, filter, attrs)
+            res = connection.search_s(base, scope, fltr, attrs)
         except ldap.PARTIAL_RESULTS:
             res_type, res = connection.result(all=0)
         except ldap.REFERRAL, e:
             connection = self._handle_referral(e)
 
             try:
-                res = connection.search_s(base, scope, filter, attrs)
+                res = connection.search_s(base, scope, fltr, attrs)
             except ldap.PARTIAL_RESULTS:
                 res_type, res = connection.result(all=0)
 
@@ -198,7 +215,7 @@ class LDAPConnection(object):
         """
         self._complainIfReadOnly()
 
-        dn = self._clean_dn(to_utf8('%s,%s' % (rdn, base)))
+        dn = escape_dn(to_utf8('%s,%s' % (rdn, base)))
         attribute_list = []
         attrs = attrs and attrs or {}
 
@@ -229,7 +246,7 @@ class LDAPConnection(object):
         """
         self._complainIfReadOnly()
 
-        utf8_dn = self._clean_dn(to_utf8(dn))
+        utf8_dn = escape_dn(to_utf8(dn))
 
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
@@ -243,7 +260,7 @@ class LDAPConnection(object):
         """
         self._complainIfReadOnly()
 
-        utf8_dn = self._clean_dn(to_utf8(dn))
+        utf8_dn = escape_dn(to_utf8(dn))
         res = self.search(base=utf8_dn, scope=ldap.SCOPE_BASE)
         attrs = attrs and attrs or {}
 
@@ -283,7 +300,7 @@ class LDAPConnection(object):
 
             if new_rdn and new_rdn != cur_rec.get(self.rdn_attr)[0]:
                 raw_utf8_rdn = to_utf8('%s=%s' % (self.rdn_attr, new_rdn))
-                new_utf8_rdn = self._clean_rdn(raw_utf8_rdn)
+                new_utf8_rdn = escape_dn(raw_utf8_rdn)
                 connection.modrdn_s(utf8_dn, new_utf8_rdn)
                 old_dn_exploded = explode_dn(utf8_dn, 0)
                 old_dn_exploded[0] = new_utf8_rdn
@@ -293,8 +310,7 @@ class LDAPConnection(object):
                 connection.modify_s(utf8_dn, mod_list)
             else:
                 debug_msg = 'Nothing to modify: %s' % utf8_dn
-                if self.logger is not None:
-                    self.logger.debug('LDAPDelegate.modify: %s' % debug_msg)
+                self.logger.debug('LDAPDelegate.modify: %s' % debug_msg)
 
         except ldap.REFERRAL, e:
             connection = self._handle_referral(e)
@@ -307,46 +323,11 @@ class LDAPConnection(object):
         info = payload.get('info')
         ldap_url = info[info.find('ldap'):]
 
-        if isLDAPUrl(ldap_url):
-            conn_str = LDAPUrl(ldap_url).initializeUrl()
+        if ldapurl.isLDAPUrl(ldap_url):
+            conn_str = ldapurl.LDAPUrl(ldap_url).initializeUrl()
             return self._connect(conn_str, self.bind_dn, self.bind_pwd)
         else:
             raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
-
-    def _clean_rdn(self, rdn):
-        """ Escape all characters that need escaping for a DN, see RFC 2253 
-        """
-        if rdn.find('\\') != -1:
-            # already escaped, disregard
-            return rdn
-
-        try:
-            key, val = rdn.split('=')
-            val = val.lstrip()
-            return '%s=%s' % (key, escape_dn_chars(val))
-        except ValueError:
-            return rdn
-
-    def _clean_dn(self, dn):
-        """ Escape all characters that need escaping for a DN, see RFC 2253 
-        """
-        elems = [self._clean_rdn(x) for x in dn.split(',')]
-
-        return ','.join(elems)
-
-    def _createConnectionString(self, server_info):
-        """ Convert a server info mapping into a connection string
-        """
-        protocol = server_info['protocol']
-
-        if protocol == 'ldapi':
-            hostport = server_info['host']
-        else:
-            hostport = '%s:%s' % (server_info['host'], server_info['port'])
-
-        ldap_url = LDAPUrl(urlscheme=protocol, hostport=hostport)
-
-        return ldap_url.initializeUrl()
 
     def _complainIfReadOnly(self):
         """ Raise RuntimeError if the connection is set to `read-only`

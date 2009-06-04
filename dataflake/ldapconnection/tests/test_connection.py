@@ -37,7 +37,6 @@ class ConnectionTests(LDAPConnectionTests):
         self.failIf(conn.read_only)
         self.assertEqual(conn.conn, None)
         self.assertEqual(conn.c_factory, DummyLDAPObjectFactory)
-        self.assertEqual(conn.logger, None)
 
     def test_constructor(self):
         conn = self._makeOne( 'localhost'
@@ -80,13 +79,13 @@ class ConnectionTests(LDAPConnectionTests):
 
     def test_search_noauthentication(self):
         conn = self._makeSimple()
-        response = conn.search('base', 'scope')
+        response = conn.search('o=base', 'scope')
         self.assertEqual(conn.conn.binduid, '')
         self.assertEqual(conn.conn.bindpwd, '')
 
     def test_search_authentication(self):
         conn = self._makeSimple()
-        response = conn.search('base', 'scope', bind_dn='user', bind_pwd='foo')
+        response = conn.search('o=base', 'scope', bind_dn='user', bind_pwd='foo')
         self.assertEqual(conn.conn.binduid, 'user')
         self.assertEqual(conn.conn.bindpwd, 'foo')
 
@@ -96,7 +95,7 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('base', 'scope')
+        response = conn.search('o=base', 'scope')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
@@ -114,7 +113,7 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('base', 'scope')
+        response = conn.search('o=base', 'scope')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
@@ -128,7 +127,7 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('base', 'scope')
+        response = conn.search('o=base', 'scope')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
@@ -145,7 +144,7 @@ class ConnectionTests(LDAPConnectionTests):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('base', 'scope')
+        response = conn.search('o=base', 'scope')
         self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
 
     def test_search_binaryattribute(self):
@@ -156,7 +155,7 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('base', 'scope')
+        response = conn.search('o=base', 'scope')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
@@ -234,7 +233,7 @@ class ConnectionTests(LDAPConnectionTests):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
-        conn.modify('dn', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
+        conn.modify('cn=foo', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
         self.assertEqual(of.binduid, '')
         self.assertEqual(of.bindpwd, '')
 
@@ -245,7 +244,7 @@ class ConnectionTests(LDAPConnectionTests):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
-        conn.modify( 'dn'
+        conn.modify( 'cn=foo'
                    , mod_type=ldap.MOD_ADD
                    , attrs={'b':'b'}
                    , bind_dn='user'
@@ -261,9 +260,9 @@ class ConnectionTests(LDAPConnectionTests):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
-        conn.modify('dn', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
+        conn.modify('cn=foo', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         self.assertEqual(mode, ldap.MOD_ADD)
@@ -271,7 +270,7 @@ class ConnectionTests(LDAPConnectionTests):
         self.assertEqual(values, ['b'])
 
         # Trying to add an empty new value should not cause more operations
-        conn.modify('dn', mod_type=ldap.MOD_ADD, attrs={'c':''})
+        conn.modify('cn=foo', mod_type=ldap.MOD_ADD, attrs={'c':''})
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_explicit_modify(self):
@@ -281,9 +280,9 @@ class ConnectionTests(LDAPConnectionTests):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
-        conn.modify('dn', mod_type=ldap.MOD_REPLACE, attrs={'a':'y'})
+        conn.modify('cn=foo', mod_type=ldap.MOD_REPLACE, attrs={'a':'y'})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         self.assertEqual(mode, ldap.MOD_REPLACE)
@@ -292,7 +291,7 @@ class ConnectionTests(LDAPConnectionTests):
 
         # Trying to modify a non-existing key with an empty value should
         # not result in more operations
-        conn.modify('dn', mod_type=ldap.MOD_REPLACE, attrs={'b':''})
+        conn.modify('cn=foo', mod_type=ldap.MOD_REPLACE, attrs={'b':''})
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_explicit_delete(self):
@@ -302,9 +301,9 @@ class ConnectionTests(LDAPConnectionTests):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
-        conn.modify('dn', mod_type=ldap.MOD_DELETE, attrs={'a':'y'})
+        conn.modify('cn=foo', mod_type=ldap.MOD_DELETE, attrs={'a':'y'})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         self.assertEqual(mode, ldap.MOD_DELETE)
@@ -312,7 +311,7 @@ class ConnectionTests(LDAPConnectionTests):
 
         # Tryng to modify the record by providing an empty non-existing key
         # should not result in more operations.
-        conn.modify('dn', mod_type=ldap.MOD_DELETE, attrs={'b':''})
+        conn.modify('cn=foo', mod_type=ldap.MOD_DELETE, attrs={'b':''})
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_implicit_add(self):
@@ -321,9 +320,9 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('dn', attrs={'b':'b'})
+        conn.modify('cn=foo', attrs={'b':'b'})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         import ldap
@@ -332,7 +331,7 @@ class ConnectionTests(LDAPConnectionTests):
         self.assertEqual(values, ['b'])
 
         # Trying to add an empty new value should not cause more operations
-        conn.modify('dn', attrs={'c':''})
+        conn.modify('cn=foo', attrs={'c':''})
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_implicit_modify(self):
@@ -341,9 +340,9 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('dn', attrs={'a':'y'})
+        conn.modify('cn=foo', attrs={'a':'y'})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         import ldap
@@ -353,7 +352,7 @@ class ConnectionTests(LDAPConnectionTests):
 
         # Trying to modify a non-existing key should
         # not result in more operations
-        conn.modify('dn', attrs={'b':'z'})
+        conn.modify('cn=foo', attrs={'b':'z'})
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_implicit_delete(self):
@@ -362,9 +361,9 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('dn', attrs={'a':''})
+        conn.modify('cn=foo', attrs={'a':''})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         import ldap
@@ -373,12 +372,12 @@ class ConnectionTests(LDAPConnectionTests):
 
         # Trying to modify the record by providing an empty non-existing key
         # should not result in more operations.
-        conn.modify('dn', attrs={'b':''})
+        conn.modify('cn=foo', attrs={'b':''})
         self.assertEqual(len(of.modifications), 1)
 
     def test_modify_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
-        self.assertRaises(RuntimeError, conn.modify, 'dn', {})
+        self.assertRaises(RuntimeError, conn.modify, 'cn=foo', {})
 
     def test_modify_binary(self):
         of = DummyLDAPObjectFactory('conn_string')
@@ -386,9 +385,9 @@ class ConnectionTests(LDAPConnectionTests):
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('dn', attrs={'a;binary':u'y'})
+        conn.modify('cn=foo', attrs={'a;binary':u'y'})
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         self.assertEqual(key, 'a')
@@ -425,10 +424,10 @@ class ConnectionTests(LDAPConnectionTests):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('dn', attrs={'a':'y'})
+        conn.modify('cn=foo', attrs={'a':'y'})
         self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
         self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'dn')
+        self.assertEqual(of.modified_dn, 'cn=foo')
         self.assertEqual(len(of.modifications), 1)
         mode, key, values = of.modifications[0]
         self.assertEqual(mode, ldap.MOD_REPLACE)
@@ -437,25 +436,25 @@ class ConnectionTests(LDAPConnectionTests):
 
     def test_delete_noauthentication(self):
         conn = self._makeSimple()
-        conn.delete('dn')
+        conn.delete('cn=foo')
         self.assertEqual(conn.conn.binduid, '')
         self.assertEqual(conn.conn.bindpwd, '')
 
     def test_delete_authentication(self):
         conn = self._makeSimple()
-        conn.delete('dn', bind_dn='user', bind_pwd='foo')
+        conn.delete('cn=foo', bind_dn='user', bind_pwd='foo')
         self.assertEqual(conn.conn.binduid, 'user')
         self.assertEqual(conn.conn.bindpwd, 'foo')
 
     def test_delete(self):
         conn = self._makeSimple()
-        conn.delete('dn')
+        conn.delete('cn=foo')
         self.failUnless(conn.conn.deleted)
-        self.assertEqual(conn.conn.deleted_dn, 'dn')
+        self.assertEqual(conn.conn.deleted_dn, 'cn=foo')
 
     def test_delete_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
-        self.assertRaises(RuntimeError, conn.delete, 'dn')
+        self.assertRaises(RuntimeError, conn.delete, 'cn=foo')
 
     def test_delete_referral(self):
         of = DummyLDAPObjectFactory('conn_string')
@@ -467,10 +466,10 @@ class ConnectionTests(LDAPConnectionTests):
             of.conn_string = conn_string
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.delete('dn')
+        conn.delete('cn=foo')
         self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
         self.failUnless(of.deleted)
-        self.assertEqual(of.deleted_dn, 'dn')
+        self.assertEqual(of.deleted_dn, 'cn=foo')
 
 
 def test_suite():

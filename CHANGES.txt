@@ -4,6 +4,19 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- replaced several methods with better alternatives from python-ldap,
+  which also requires upping the dependency to python-ldap>=2.3.0, 
+  and fixing up the tests.
+
+- pare down fakeldap to not try and provide all kinds of constants 
+  from python-ldap, but just a LDAP connection class.
+
+- add a new method "bind" to rebind a connection, if the last bind
+  differs from the desired bind.
+
+- rename variable name "filter" with "fltr" to stop shadowing the 
+  Python function "filter".
+
 - added an interfaces file as documentation and "contract". This adds 
   a dependency on zope.interface.
 
