@@ -17,9 +17,12 @@ $Id: FakeLDAP.py 1485 2008-06-04 16:08:38Z jens $
 
 import base64
 import copy
+try:
+    from hashlib import sha1 as sha_new
+except ImportError:
+    from sha import new as sha_new
 import ldap
 import re
-import sha
 
 # From http://www.ietf.org/rfc/rfc2254.txt, Section 4
 #
@@ -364,7 +367,7 @@ class FakeLDAPConnection:
             # Emulate LDAP mis-behavior
             return 1
 
-        sha_obj = sha.new(bindpwd)
+        sha_obj = sha_new(bindpwd)
         sha_dig = sha_obj.digest()
         enc_bindpwd = '{SHA}%s' % base64.encodestring(sha_dig)
         enc_bindpwd = enc_bindpwd.strip()
