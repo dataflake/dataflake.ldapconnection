@@ -44,8 +44,9 @@ class LDAPConnection(object):
 
     implements(ILDAPConnection)
 
-    def __init__( self, host, port, protocol, c_factory=SmartLDAPObject
-                , rdn_attr='', bind_dn='', bind_pwd='', read_only=False
+    def __init__( self, host='', port=389, protocol='ldap'
+                , c_factory=SmartLDAPObject, rdn_attr='', bind_dn=''
+                , bind_pwd='', read_only=False
                 , conn_timeout=-1, op_timeout=-1, logger=None
                 ):
         """ LDAPConnection initialization
@@ -59,7 +60,9 @@ class LDAPConnection(object):
         self.logger = logger or default_logger
 
         self.servers = {}
-        self.addServer(host, port, protocol, conn_timeout, op_timeout)
+
+        if host:
+            self.addServer(host, port, protocol, conn_timeout, op_timeout)
 
     def addServer(self, host, port, protocol, conn_timeout=-1, op_timeout=-1):
         """ Add a server to the list of servers used

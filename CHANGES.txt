@@ -4,6 +4,9 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Creating a new instance does not require passing server data like 
+  host, port and protocol anymore.
+
 - replaced several methods with better alternatives from python-ldap,
   which also requires upping the dependency to python-ldap>=2.3.0, 
   and fixing up the tests.
