@@ -19,6 +19,7 @@ Narrative documentation explaining how to use :mod:`dataflake.ldapconnection`.
    :maxdepth: 2
 
    install
+   usage
    development
    glossary
 
@@ -31,6 +32,7 @@ API documentation for :mod:`dataflake.ldapconnection`.
    :maxdepth: 2
 
    api
+   connection_module
 
 Support
 -------
@@ -43,6 +45,7 @@ Indices and tables
 ------------------
 
 * :ref:`genindex`
+* :ref:`modindex`
 * :ref:`search`
 * :ref:`glossary`
 

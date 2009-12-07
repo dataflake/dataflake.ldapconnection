@@ -44,7 +44,7 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'dataflake.ldapconnection'
-copyright = '2008, Jens Vagelpohl'
+copyright = '2008-2009, Jens Vagelpohl'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
