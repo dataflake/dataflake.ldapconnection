@@ -65,7 +65,7 @@ class LDAPConnection(object):
             self.addServer(host, port, protocol, conn_timeout, op_timeout)
 
     def addServer(self, host, port, protocol, conn_timeout=-1, op_timeout=-1):
-        """ Add a server to the list of servers used
+        """ Add a server definition to the list of servers used
         """
         l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
         server_url = l.initializeUrl()
@@ -75,17 +75,12 @@ class LDAPConnection(object):
                                    }
 
     def removeServer(self, host, port, protocol):
+        """ Remove a server definition from the list of servers used
+        """
         l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
         server_url = l.initializeUrl()
         if server_url in self.servers.keys():
             del self.servers[server_url]
-
-    def bind(self, ldap_conn, bind_dn, bind_pwd):
-        """ Attempt a bind operation
-        """
-        last_bind = getattr(ldap_conn, '_last_bind', (None, ((),()), {}))
-        if last_bind[1][0] != bind_dn and last_bind[1][1] != bind_pwd:
-            ldap_conn.simple_bind_s(bind_dn, bind_pwd)
 
     def connect(self, bind_dn=None, bind_pwd=None):
         """ initialize an ldap server connection 
@@ -119,7 +114,10 @@ class LDAPConnection(object):
                 if e:
                     raise e
 
-        self.bind(self.conn, bind_dn, bind_pwd)
+        last_bind = getattr(self.conn, '_last_bind', (None, ((),()), {}))
+        if last_bind[1][0] != bind_dn and last_bind[1][1] != bind_pwd:
+            self.conn.simple_bind_s(bind_dn, bind_pwd)
+
         return self.conn
 
     def _connect( self

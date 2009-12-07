@@ -4,6 +4,14 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Removed the `bind` method. There was no good reason to expose it 
+  as part of the public API, and since bind operations are 
+  re-done as part of all operations it would only serve to 
+  confuse users.
+  Users who want to use credentials other than the credentials 
+  configured into the connection instance should pass them along 
+  explicitly when invoking the operation.
+
 - The search method now provides a default search subtree search 
   scope if none is specified.
 
