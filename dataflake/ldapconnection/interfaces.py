@@ -74,8 +74,8 @@ class ILDAPConnection(Interface):
         """
 
     def search( base
-              , scope
-              , filter='(objectClass=*)'
+              , scope=2
+              , fltr='(objectClass=*)'
               , attrs=None
               , convert_filter=True
               , bind_dn=None
@@ -83,13 +83,14 @@ class ILDAPConnection(Interface):
               ):
         """ Perform a LDAP search
 
-        The search `base` is the point in the tree to searc from. `scope`
+        The search `base` is the point in the tree to search from. `scope`
         defines how to search and must be one of the scopes defined by the
         `python-ldap` module (`ldap.SCOPE_BASE`, `ldap.SCOPE_ONELEVEL` or
-        `ldap.SCOPE_SUBTREE`). What to search for is described by the 
-        `filter` argument, which must be a valid LDAP search filter string.
-        If only certain record attributes should be returned, they can be
-        specified in the `attrs` sequence.
+        `ldap.SCOPE_SUBTREE`). By default, `ldap.SCOPE_SUBTREE` is used.
+        What to search for is described by the `filter` argument, which 
+        must be a valid LDAP search filter string. If only certain record 
+        attributes should be returned, they can be specified in the `attrs` 
+        sequence.
 
         If the search raised no errors, a mapping with the following keys
         is returned:

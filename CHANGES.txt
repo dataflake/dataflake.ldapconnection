@@ -4,6 +4,9 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- The search method now provides a default search subtree search 
+  scope if none is specified.
+
 - Creating a new instance does not require passing server data like 
   host, port and protocol anymore.
 

@@ -151,7 +151,7 @@ class LDAPConnection(object):
 
     def search( self
               , base
-              , scope
+              , scope=ldap.SCOPE_SUBTREE
               , fltr='(objectClass=*)'
               , attrs=None
               , convert_filter=True
