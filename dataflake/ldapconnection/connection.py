@@ -84,6 +84,10 @@ class LDAPConnection(object):
 
     def connect(self, bind_dn=None, bind_pwd=None):
         """ initialize an ldap server connection 
+
+        This method returns an instance of the underlying `python-ldap` 
+        connection class. It does not need to be called explicitly, all
+        other operations call it implicitly.
         """
         if len(self.servers.keys()) == 0:
             raise RuntimeError('No servers defined')

@@ -63,6 +63,10 @@ class ILDAPConnection(Interface):
         is forced every time the method can be used to re-bind the cached
         connection with new credentials.
 
+        This method returns an instance of the underlying `python-ldap` 
+        connection class. It does not need to be called explicitly, all
+        other operations call it implicitly.
+
         Raises RuntimeError if no server definitions are available.
         """
 
