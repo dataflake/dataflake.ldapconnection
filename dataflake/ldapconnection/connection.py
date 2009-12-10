@@ -51,7 +51,6 @@ class LDAPConnection(object):
                 ):
         """ LDAPConnection initialization
         """
-        self.rdn_attr = rdn_attr
         self.bind_dn = bind_dn
         self.bind_pwd = bind_pwd
         self.read_only = read_only
@@ -306,13 +305,15 @@ class LDAPConnection(object):
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
-            raw_rdn = attrs.get(self.rdn_attr, '')
+            rdn = ldap.dn.str2dn(utf8_dn)[0]
+            rdn_attr = rdn[0][0]
+            raw_rdn = attrs.get(rdn_attr, '')
             if isinstance(raw_rdn, (str, unicode)):
                 raw_rdn = [raw_rdn]
             new_rdn = raw_rdn[0]
 
-            if new_rdn and new_rdn != cur_rec.get(self.rdn_attr)[0]:
-                raw_utf8_rdn = to_utf8('%s=%s' % (self.rdn_attr, new_rdn))
+            if new_rdn and new_rdn != cur_rec.get(rdn_attr)[0]:
+                raw_utf8_rdn = to_utf8('%s=%s' % (rdn_attr, new_rdn))
                 new_utf8_rdn = escape_dn(raw_utf8_rdn)
                 connection.modrdn_s(utf8_dn, new_utf8_rdn)
                 old_dn_exploded = explode_dn(utf8_dn, 0)

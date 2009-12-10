@@ -4,6 +4,11 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Removed the rdn_attr attribute, which was used to try and 
+  determine if a modify operation should trigger a modrdn. We 
+  now fish the RDN attribute from the record's DN for this 
+  purpose.
+
 - Changed the way internal logging is done to avoid storing logger
   objects onto the connection instance unless it is explicitly
   specified. This means the instance is picklable when using the 

@@ -31,7 +31,6 @@ class ConnectionTests(LDAPConnectionTests):
 
     def test_constructor_defaults(self):
         conn = self._makeSimple()
-        self.assertEqual(conn.rdn_attr, '')
         self.assertEqual(conn.bind_dn, '')
         self.assertEqual(conn.bind_pwd, '')
         self.failIf(conn.read_only)
@@ -43,7 +42,6 @@ class ConnectionTests(LDAPConnectionTests):
                             , 389
                             , 'ldap'
                             , 'factory'
-                            , rdn_attr='cn'
                             , bind_dn='user'
                             , bind_pwd='foo'
                             , read_only=True
@@ -51,7 +49,6 @@ class ConnectionTests(LDAPConnectionTests):
                             , op_timeout=10
                             , logger='logger'
                             )
-        self.assertEqual(conn.rdn_attr, 'cn')
         self.assertEqual(conn.bind_dn, 'user')
         self.assertEqual(conn.bind_pwd, 'foo')
         self.failUnless(conn.read_only)
@@ -398,7 +395,7 @@ class ConnectionTests(LDAPConnectionTests):
         of.res = [ ('a=oldvalue,dc=localhost', {'a':'oldvalue'}) ]
         def factory(conn_string, who='', cred=''):
             return of
-        conn = self._makeOne('host', 636, 'ldap', factory, rdn_attr='a')
+        conn = self._makeOne('host', 636, 'ldap', factory)
         conn.modify('a=oldvalue,dc=localhost', attrs={'a':'newvalue'})
         self.failUnless(of.modified_rdn)
         self.assertEqual(of.old_dn, 'a=oldvalue,dc=localhost')
