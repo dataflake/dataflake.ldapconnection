@@ -57,12 +57,20 @@ class LDAPConnection(object):
         self.read_only = read_only
         self.c_factory = c_factory
         self.conn = None
-        self.logger = logger or default_logger
+        self._logger = logger
 
         self.servers = {}
 
         if host:
             self.addServer(host, port, protocol, conn_timeout, op_timeout)
+
+    def logger(self):
+        """ Get the logger
+        """
+        if self._logger is None:
+            return default_logger
+
+        return self._logger
 
     def addServer(self, host, port, protocol, conn_timeout=-1, op_timeout=-1):
         """ Add a server definition to the list of servers used
@@ -113,7 +121,7 @@ class LDAPConnection(object):
                 exception_string = str(e or 'no exception')
                 msg = 'Failure connecting, last attempt: %s (%s)' % (
                             server['url'], str(e or 'no exception'))
-                self.logger.critical(msg, exc_info=1)
+                self.logger().critical(msg, exc_info=1)
 
                 if e:
                     raise e
@@ -315,7 +323,7 @@ class LDAPConnection(object):
                 connection.modify_s(utf8_dn, mod_list)
             else:
                 debug_msg = 'Nothing to modify: %s' % utf8_dn
-                self.logger.debug('LDAPDelegate.modify: %s' % debug_msg)
+                self.logger().debug(debug_msg)
 
         except ldap.REFERRAL, e:
             connection = self._handle_referral(e)

@@ -57,7 +57,7 @@ class ConnectionTests(LDAPConnectionTests):
         self.failUnless(conn.read_only)
         self.assertEqual(conn.conn, None)
         self.assertEqual(conn.c_factory, 'factory')
-        self.assertEqual(conn.logger, 'logger')
+        self.assertEqual(conn.logger(), 'logger')
 
     def test_connect_initial_noargs(self):
         conn = self._makeSimple()
