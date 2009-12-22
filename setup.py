@@ -54,11 +54,13 @@ setup(name='dataflake.ldapconnection',
       zip_safe=False,
       tests_require = [
               'python-ldap>=2.3.0',
+              'dataflake.cache',
               ],
       install_requires=[
               'setuptools',
               'python-ldap>=2.3.0',
-              'zope.interface'
+              'zope.interface',
+              'dataflake.cache',
               ],
       test_suite='dataflake.ldapconnection.tests',
       )

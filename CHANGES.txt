@@ -4,6 +4,10 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- move the actual python-ldap connection from an attribute into
+  a module-level cache since those connections cannot be
+  pickled.
+
 - Removed the rdn_attr attribute, which was used to try and 
   determine if a modify operation should trigger a modrdn. We 
   now fish the RDN attribute from the record's DN for this 

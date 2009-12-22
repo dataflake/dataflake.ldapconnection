@@ -20,6 +20,7 @@ $Id$
 
 import ldap
 from ldap.dn import explode_dn
+from ldap.dn import str2dn
 from ldap.filter import filter_format
 from ldap.ldapobject import SmartLDAPObject
 import ldapurl
@@ -27,6 +28,7 @@ import logging
 
 from zope.interface import implements
 
+from dataflake.cache.simple import LockingSimpleCache
 from dataflake.ldapconnection.interfaces import ILDAPConnection
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import escape_dn
@@ -34,6 +36,7 @@ from dataflake.ldapconnection.utils import from_utf8
 from dataflake.ldapconnection.utils import to_utf8
 
 default_logger = logging.getLogger('dataflake.ldapconnection')
+connection_cache = LockingSimpleCache()
 
 
 class LDAPConnection(object):
@@ -55,9 +58,9 @@ class LDAPConnection(object):
         self.bind_pwd = bind_pwd
         self.read_only = read_only
         self.c_factory = c_factory
-        self.conn = None
         self._logger = logger
 
+        self.hash = id(self)
         self.servers = {}
 
         if host:
@@ -103,20 +106,21 @@ class LDAPConnection(object):
             bind_dn = self.bind_dn
             bind_pwd = self.bind_pwd
 
-        if self.conn is None:
+        conn = self._getConnection()
+        if conn is None:
             for server in self.servers.values():
                 try:
-                    self.conn = self._connect( server['url']
-                                             , bind_dn
-                                             , bind_pwd
-                                             , conn_timeout=server['conn_timeout']
-                                             , op_timeout=server['op_timeout']
-                                             )
+                    conn = self._connect( server['url']
+                                        , bind_dn
+                                        , bind_pwd
+                                        , conn_timeout=server['conn_timeout']
+                                        , op_timeout=server['op_timeout']
+                                        )
                     break
                 except (ldap.SERVER_DOWN, ldap.TIMEOUT), e:
                     continue
 
-            if self.conn is None:
+            if conn is None:
                 exception_string = str(e or 'no exception')
                 msg = 'Failure connecting, last attempt: %s (%s)' % (
                             server['url'], str(e or 'no exception'))
@@ -125,11 +129,18 @@ class LDAPConnection(object):
                 if e:
                     raise e
 
-        last_bind = getattr(self.conn, '_last_bind', (None, ((),()), {}))
-        if last_bind[1][0] != bind_dn and last_bind[1][1] != bind_pwd:
-            self.conn.simple_bind_s(bind_dn, bind_pwd)
+            connection_cache.set(self.hash, conn)
 
-        return self.conn
+        last_bind = getattr(conn, '_last_bind', (None, ((),()), {}))
+        if last_bind[1][0] != bind_dn and last_bind[1][1] != bind_pwd:
+            conn.simple_bind_s(bind_dn, bind_pwd)
+
+        return conn
+
+    def _getConnection(self):
+        """ Private helper to get my connection out of the cache
+        """
+        return connection_cache.get(self.hash)
 
     def _connect( self
                 , connection_string
@@ -305,7 +316,7 @@ class LDAPConnection(object):
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
-            rdn = ldap.dn.str2dn(utf8_dn)[0]
+            rdn = str2dn(utf8_dn)[0]
             rdn_attr = rdn[0][0]
             raw_rdn = attrs.get(rdn_attr, '')
             if isinstance(raw_rdn, (str, unicode)):

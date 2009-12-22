@@ -34,7 +34,7 @@ class ConnectionTests(LDAPConnectionTests):
         self.assertEqual(conn.bind_dn, '')
         self.assertEqual(conn.bind_pwd, '')
         self.failIf(conn.read_only)
-        self.assertEqual(conn.conn, None)
+        self.assertEqual(conn._getConnection(), None)
         self.assertEqual(conn.c_factory, DummyLDAPObjectFactory)
 
     def test_constructor(self):
@@ -52,7 +52,7 @@ class ConnectionTests(LDAPConnectionTests):
         self.assertEqual(conn.bind_dn, 'user')
         self.assertEqual(conn.bind_pwd, 'foo')
         self.failUnless(conn.read_only)
-        self.assertEqual(conn.conn, None)
+        self.assertEqual(conn._getConnection(), None)
         self.assertEqual(conn.c_factory, 'factory')
         self.assertEqual(conn.logger(), 'logger')
 
@@ -70,21 +70,24 @@ class ConnectionTests(LDAPConnectionTests):
 
     def test_connect_non_initial(self):
         conn = self._makeSimple()
-        conn.conn = DummyLDAPObjectFactory('conn_string')
-        conn = conn.connect(None, 'pass')
-        self.assertEqual(conn.conn_string, 'conn_string')
+        connection = conn.connect('foo', 'pass')
+        self.assertEqual(connection.binduid, 'foo')
+        connection = conn.connect(None, 'pass')
+        self.assertEqual(connection.binduid, conn.bind_dn)
 
     def test_search_noauthentication(self):
         conn = self._makeSimple()
         response = conn.search('o=base', 'scope')
-        self.assertEqual(conn.conn.binduid, '')
-        self.assertEqual(conn.conn.bindpwd, '')
+        connection = conn._getConnection()
+        self.assertEqual(connection.binduid, '')
+        self.assertEqual(connection.bindpwd, '')
 
     def test_search_authentication(self):
         conn = self._makeSimple()
         response = conn.search('o=base', 'scope', bind_dn='user', bind_pwd='foo')
-        self.assertEqual(conn.conn.binduid, 'user')
-        self.assertEqual(conn.conn.bindpwd, 'foo')
+        connection = conn._getConnection()
+        self.assertEqual(connection.binduid, 'user')
+        self.assertEqual(connection.bindpwd, 'foo')
 
     def test_search_simple(self):
         of = DummyLDAPObjectFactory('conn_string')
@@ -161,8 +164,9 @@ class ConnectionTests(LDAPConnectionTests):
     def test_insert_noauthentication(self):
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', attrs={})
-        self.assertEqual(conn.conn.binduid, '')
-        self.assertEqual(conn.conn.bindpwd, '')
+        connection = conn._getConnection()
+        self.assertEqual(connection.binduid, '')
+        self.assertEqual(connection.bindpwd, '')
 
     def test_insert_authentication(self):
         conn = self._makeSimple()
@@ -172,8 +176,9 @@ class ConnectionTests(LDAPConnectionTests):
                    , bind_dn='user'
                    , bind_pwd='foo'
                    )
-        self.assertEqual(conn.conn.binduid, 'user')
-        self.assertEqual(conn.conn.bindpwd, 'foo')
+        connection = conn._getConnection()
+        self.assertEqual(connection.binduid, 'user')
+        self.assertEqual(connection.bindpwd, 'foo')
 
     def test_insert(self):
         attributes = { 'cn' : 'jens'
@@ -182,9 +187,10 @@ class ConnectionTests(LDAPConnectionTests):
                      }
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', attrs=attributes)
-        self.failUnless(conn.conn.added)
-        self.assertEqual(len(conn.conn.added_values.keys()), 1)
-        dn, values = conn.conn.added_values.items()[0]
+        connection = conn._getConnection()
+        self.failUnless(connection.added)
+        self.assertEqual(len(connection.added_values.keys()), 1)
+        dn, values = connection.added_values.items()[0]
         self.assertEqual(dn, 'cn=jens' + ',' + 'dc=localhost')
         self.assertEqual(values['cn'], ['jens'])
         self.assertEqual(values['multivaluestring'], ['val1','val2','val3'])
@@ -218,9 +224,10 @@ class ConnectionTests(LDAPConnectionTests):
     def test_insert_binary(self):
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', {'myvalue;binary' : u'a'})
-        self.failUnless(conn.conn.added)
-        self.assertEqual(len(conn.conn.added_values.keys()), 1)
-        dn, values = conn.conn.added_values.items()[0]
+        connection = conn._getConnection()
+        self.failUnless(connection.added)
+        self.assertEqual(len(connection.added_values.keys()), 1)
+        dn, values = connection.added_values.items()[0]
         self.assertEqual(values['myvalue'], u'a')
 
     def test_modify_noauthentication(self):
@@ -434,20 +441,23 @@ class ConnectionTests(LDAPConnectionTests):
     def test_delete_noauthentication(self):
         conn = self._makeSimple()
         conn.delete('cn=foo')
-        self.assertEqual(conn.conn.binduid, '')
-        self.assertEqual(conn.conn.bindpwd, '')
+        connection = conn._getConnection()
+        self.assertEqual(connection.binduid, '')
+        self.assertEqual(connection.bindpwd, '')
 
     def test_delete_authentication(self):
         conn = self._makeSimple()
         conn.delete('cn=foo', bind_dn='user', bind_pwd='foo')
-        self.assertEqual(conn.conn.binduid, 'user')
-        self.assertEqual(conn.conn.bindpwd, 'foo')
+        connection = conn._getConnection()
+        self.assertEqual(connection.binduid, 'user')
+        self.assertEqual(connection.bindpwd, 'foo')
 
     def test_delete(self):
         conn = self._makeSimple()
         conn.delete('cn=foo')
-        self.failUnless(conn.conn.deleted)
-        self.assertEqual(conn.conn.deleted_dn, 'cn=foo')
+        connection = conn._getConnection()
+        self.failUnless(connection.deleted)
+        self.assertEqual(connection.deleted_dn, 'cn=foo')
 
     def test_delete_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)

@@ -17,9 +17,14 @@ $Id$
 
 import unittest
 
+from dataflake.ldapconnection.connection import connection_cache
 from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 
 class LDAPConnectionTests(unittest.TestCase):
+
+    def tearDown(self):
+        super(LDAPConnectionTests, self).tearDown()
+        connection_cache.invalidate()
 
     def _getTargetClass(self):
         from dataflake.ldapconnection.connection import LDAPConnection
