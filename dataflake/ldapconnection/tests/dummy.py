@@ -92,3 +92,15 @@ class DummyLDAPObjectFactory:
             raise exception
         self.deleted_dn = dn
 
+
+class ErrorLDAPObjectFactory:
+
+    def __init__(self, conn_string, who='', cred=''):
+        pass
+
+    def setException(self, exc_class):
+        self.exc_class = exc_class
+
+    def set_option(self, option, value):
+        raise self.exc_class('error raised')
+
