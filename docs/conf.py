@@ -10,21 +10,18 @@
 # All configuration values have a default value; values that are commented out
 # serve to show the default value.
 
-import sys, os
+import datetime
+import os
+import pkginfo
+import sys
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 parent = os.path.dirname(os.path.dirname(__file__))
-sys.path.append(os.path.abspath(parent))
-wd = os.getcwd()
-os.chdir(parent)
-os.system('%s setup.py test -q' % sys.executable)
-os.chdir(wd)
-
-for item in os.listdir(parent):
-    if item.endswith('.egg'):
-        sys.path.append(os.path.join(parent, item))
+parent_dir = os.path.abspath(parent)
+sys.path.append(parent_dir)
+pkg_info = pkginfo.Develop(parent_dir)
 
 # General configuration
 # ---------------------
@@ -43,16 +40,16 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General substitutions.
-project = 'dataflake.ldapconnection'
-copyright = '2008-2009, Jens Vagelpohl'
+project = pkg_info.name
+copyright = '2008-%i, Jens Vagelpohl' % datetime.datetime.now().year
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '1.0'
+version = pkg_info.version.replace('dev', '')
 # The full version, including alpha/beta/rc tags.
-release = '1.0dev'
+release = pkg_info.version
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -165,7 +162,12 @@ htmlhelp_basename = 'dataflakeldapconnection'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'dataflake.ldapconnection.tex', 'dataflake.ldapconnection Documentation', 'Jens Vagelpohl', 'manual'),
+  ( 'index'
+  , '%s.tex' % project
+  , '%s Documentation' % project
+  , 'Jens Vagelpohl'
+  , 'manual'
+  ),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

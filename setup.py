@@ -15,9 +15,6 @@ __version__ = '1.0dev'
 
 import os
 
-from ez_setup import use_setuptools
-use_setuptools()
-
 from setuptools import setup, find_packages
 
 def read(*rnames):
