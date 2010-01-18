@@ -1,12 +1,9 @@
 Installation
 ============
 
-How To Install
---------------
-
 You will need `Python <http://python.org>`_ version 2.4 or better to
 run :mod:`dataflake.ldapconnection`.  Development of 
-:mod:`dataflake.ldapconnection` is done primarily under Python 2.4, so 
+:mod:`dataflake.ldapconnection` is done primarily under Python 2.6, so 
 that version is recommended.
 
 .. warning:: To succesfully install :mod:`dataflake.ldapconnection`, 
@@ -27,10 +24,6 @@ After you've got the requisite dependencies installed, you may install
 following command::
 
   $ easy_install dataflake.ldapconnection
-
-
-What Gets Installed
--------------------
 
 When you ``easy_install`` :mod:`dataflake.ldapconnection`, the
 :term:`python-ldap` libraries are installed if they are not present.

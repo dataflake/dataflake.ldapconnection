@@ -26,10 +26,7 @@ setup(name='dataflake.ldapconnection',
       version=__version__,
       description='LDAP connection library',
       long_description=( read('README.txt') 
-                       + _boundary 
-                       + read('CHANGES.txt')
-                       + _boundary 
-                       + "Download\n========"
+                       + "\nDownload\n========"
                        ),
       classifiers=[
         "Development Status :: 3 - Alpha",

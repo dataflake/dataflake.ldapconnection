@@ -21,7 +21,7 @@ Narrative documentation explaining how to use :mod:`dataflake.ldapconnection`.
    install
    usage
    development
-   glossary
+   changes
 
 API documentation
 -----------------
