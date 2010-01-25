@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2008-2009 Jens Vagelpohl and Contributors. All Rights Reserved.
+# Copyright (c) 2008-2010 Jens Vagelpohl and Contributors. All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
 # Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
@@ -18,8 +18,10 @@ deletions or modifications.
 $Id$
 """
 
+import codecs
 import ldap
 from ldap.dn import explode_dn
+from ldap.dn import dn2str
 from ldap.dn import str2dn
 from ldap.filter import filter_format
 from ldap.ldapobject import SmartLDAPObject
@@ -32,11 +34,10 @@ from dataflake.cache.simple import LockingSimpleCache
 from dataflake.ldapconnection.interfaces import ILDAPConnection
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import escape_dn
-from dataflake.ldapconnection.utils import from_utf8
-from dataflake.ldapconnection.utils import to_utf8
 
 default_logger = logging.getLogger('dataflake.ldapconnection')
 connection_cache = LockingSimpleCache()
+_marker = ()
 
 
 class LDAPConnection(object):
@@ -54,15 +55,20 @@ class LDAPConnection(object):
                 ):
         """ LDAPConnection initialization
         """
-        self.bind_dn = bind_dn
+        # Empty values here mean "use unicode"
+        self.ldap_encoding = 'UTF-8'
+        self.api_encoding = 'iso-8859-15'
+
+        if isinstance(bind_dn, unicode):
+            bind_dn = bind_dn.encode(self.api_encoding)
+        self.bind_dn = escape_dn(bind_dn).decode(self.api_encoding)
         self.bind_pwd = bind_pwd
         self.read_only = read_only
         self.c_factory = c_factory
         self._logger = logger
-
         self.hash = id(self)
-        self.servers = {}
 
+        self.servers = {}
         if host:
             self.addServer(host, port, protocol, conn_timeout, op_timeout)
 
@@ -103,8 +109,10 @@ class LDAPConnection(object):
             raise RuntimeError('No servers defined')
 
         if bind_dn is None:
-            bind_dn = self.bind_dn
+            bind_dn = self._encode_bind_dn()
             bind_pwd = self.bind_pwd
+        else:
+            bind_dn = escape_dn(self._encode_bind_dn(bind_dn))
 
         conn = self._getConnection()
         if conn is None:
@@ -150,6 +158,8 @@ class LDAPConnection(object):
                 , op_timeout=-1
                 ):
         """ Factored out to allow usage by other pieces 
+
+        user_dn is assumed to have been encoded/escaped correctly
         """
         connection = self.c_factory(connection_string,who=user_dn,cred=user_pwd)
 
@@ -182,9 +192,8 @@ class LDAPConnection(object):
         """
         result = {'size': 0, 'results': [], 'exception': ''}
         if convert_filter:
-            fltr = to_utf8(fltr)
-        base = escape_dn(base)
-
+            fltr = self._encode_incoming(fltr)
+        base = escape_dn(self._encode_incoming(base))
         connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
         try:
@@ -217,9 +226,11 @@ class LDAPConnection(object):
                 if key.lower() not in BINARY_ATTRIBUTES:
                     if not isinstance(value, str):
                         for i in range(len(value)):
-                            value[i] = from_utf8(value[i])
+                            value[i] = self._encode_outgoing(value[i])
+                    else:
+                        rec_dict[key] = self._encode_outgoing(value)
 
-            rec_dict['dn'] = from_utf8(rec_dn)
+            rec_dict['dn'] = self._encode_outgoing(rec_dn)
 
             result['results'].append(rec_dict)
             result['size'] += 1
@@ -237,25 +248,27 @@ class LDAPConnection(object):
         as UTF-8, by appending ';binary' to the key.
         """
         self._complainIfReadOnly()
+        base = escape_dn(self._encode_incoming(base))
+        rdn = escape_dn(self._encode_incoming(rdn))
 
-        dn = escape_dn(to_utf8('%s,%s' % (rdn, base)))
+        dn = rdn + ',' + base
         attribute_list = []
         attrs = attrs and attrs or {}
 
-        for attr_key, attr_val in attrs.items():
+        for attr_key, values in attrs.items():
             if attr_key.endswith(';binary'):
                 is_binary = True
                 attr_key = attr_key[:-7]
             else:
                 is_binary = False
 
-            if isinstance(attr_val, (str, unicode)) and not is_binary:
-                attr_val = [x.strip() for x in attr_val.split(';')]
+            if isinstance(values, basestring) and not is_binary:
+                values = [x.strip() for x in values.split(';')]
 
-            if attr_val != ['']:
+            if values != ['']:
                 if not is_binary:
-                    attr_val = map(to_utf8, attr_val)
-                attribute_list.append((attr_key, attr_val))
+                    values = [self._encode_incoming(x) for x in values]
+                attribute_list.append((attr_key, values))
 
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
@@ -269,22 +282,27 @@ class LDAPConnection(object):
         """
         self._complainIfReadOnly()
 
-        utf8_dn = escape_dn(to_utf8(dn))
+        dn = escape_dn(self._encode_incoming(dn))
 
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
-            connection.delete_s(utf8_dn)
+            connection.delete_s(dn)
         except ldap.REFERRAL, e:
             connection = self._handle_referral(e)
-            connection.delete_s(utf8_dn)
+            connection.delete_s(dn)
 
     def modify(self, dn, mod_type=None, attrs=None, bind_dn=None, bind_pwd=None):
         """ Modify a record 
         """
         self._complainIfReadOnly()
 
-        utf8_dn = escape_dn(to_utf8(dn))
-        res = self.search(base=utf8_dn, scope=ldap.SCOPE_BASE)
+        unescaped_dn = self._encode_incoming(dn)
+        dn = escape_dn(unescaped_dn)
+        res = self.search( base=unescaped_dn
+                         , scope=ldap.SCOPE_BASE
+                         , bind_dn=bind_dn
+                         , bind_pwd=bind_pwd
+                         )
         attrs = attrs and attrs or {}
 
         if res['size'] == 0:
@@ -298,10 +316,10 @@ class LDAPConnection(object):
 
             if key.endswith(';binary'):
                 key = key[:-7]
-            elif isinstance(values, (str, unicode)):
-                values = map(to_utf8, [x.strip() for x in values.split(';')])
+            elif isinstance(values, basestring):
+                values = [self._encode_incoming(x) for x in values.split(';')]
             else:
-                values = map(to_utf8, values)
+                values = [self._encode_incoming(x) for x in values]
 
             if mod_type is None:
                 if not cur_rec.has_key(key) and values != ['']:
@@ -316,25 +334,26 @@ class LDAPConnection(object):
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
-            rdn = str2dn(utf8_dn)[0]
+            dn_parts = str2dn(dn)
+            rdn = dn_parts[0]
             rdn_attr = rdn[0][0]
             raw_rdn = attrs.get(rdn_attr, '')
-            if isinstance(raw_rdn, (str, unicode)):
+            if isinstance(raw_rdn, basestring):
                 raw_rdn = [raw_rdn]
             new_rdn = raw_rdn[0]
 
             if new_rdn and new_rdn != cur_rec.get(rdn_attr)[0]:
-                raw_utf8_rdn = to_utf8('%s=%s' % (rdn_attr, new_rdn))
-                new_utf8_rdn = escape_dn(raw_utf8_rdn)
-                connection.modrdn_s(utf8_dn, new_utf8_rdn)
-                old_dn_exploded = explode_dn(utf8_dn, 0)
-                old_dn_exploded[0] = new_utf8_rdn
-                utf8_dn = ','.join(old_dn_exploded)
+                rdn_value = self._encode_incoming(new_rdn)
+                dn_parts[0] = [(rdn_attr, rdn_value, 1)]
+                raw_utf8_rdn = self._encode_incoming(rdn_attr + '=' + rdn_value)
+                new_rdn = escape_dn(raw_utf8_rdn)
+                connection.modrdn_s(dn, new_rdn)
+                dn = dn2str(dn_parts)
 
             if mod_list:
-                connection.modify_s(utf8_dn, mod_list)
+                connection.modify_s(dn, mod_list)
             else:
-                debug_msg = 'Nothing to modify: %s' % utf8_dn
+                debug_msg = 'Nothing to modify: %s' % dn
                 self.logger().debug(debug_msg)
 
         except ldap.REFERRAL, e:
@@ -350,7 +369,10 @@ class LDAPConnection(object):
 
         if ldapurl.isLDAPUrl(ldap_url):
             conn_str = ldapurl.LDAPUrl(ldap_url).initializeUrl()
-            return self._connect(conn_str, self.bind_dn, self.bind_pwd)
+            return self._connect( conn_str
+                                , self._encode_bind_dn()
+                                , self.bind_pwd
+                                )
         else:
             raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
 
@@ -362,4 +384,63 @@ class LDAPConnection(object):
         if self.read_only:
             raise RuntimeError(
                 'Running in read-only mode, directory modifications disabled')
+
+    def _encode_incoming(self, value):
+        """ Encode a string value to the encoding set for the LDAP server
+
+        - if "value" is unicode, it will be encoded to self.ldap_encoding, but
+          only if self.ldap_encoding is set.
+        - if "value" is not unicode, it is assumed to be encoded as 
+          self.api_encoding. It is decoded and encoded to self.ldap_encoding, 
+          unless self.api_encoding and self.ldap_encoding are identical. In
+          that case the passed-in value is handed back unchanged.
+        """
+        if value is None:
+            return None
+
+        elif isinstance(value, unicode):
+            if self.ldap_encoding:
+                value = value.encode(self.ldap_encoding)
+
+        else:
+            if self.api_encoding != self.ldap_encoding:
+                u_value = value.decode(self.api_encoding)
+                value = u_value.encode(self.ldap_encoding)
+        
+        return value
+
+    def _encode_outgoing(self, value):
+        """ Encode a string value to the API encoding
+
+        - if "value" is unicode, it will be encoded to self.api_encoding, but
+          only if self.ldap_encoding is set.
+        - if "value" is not unicode, it is assumed to be encoded as 
+          self.ldap_encoding. It is decoded and encoded to self.api_encoding, 
+          unless self.ldap_encoding and self.api_encoding are identical. In
+          that case the passed-in value is handed back unchanged.
+        """
+        if value is None:
+            return None
+
+        elif isinstance(value, unicode):
+            if self.api_encoding:
+                value = value.encode(self.api_encoding)
+
+        else:
+            if self.api_encoding != self.ldap_encoding:
+                u_value = value.decode(self.ldap_encoding)
+                value = u_value.encode(self.api_encoding)
+        
+        return value
+
+    def _encode_bind_dn(self, dn=None):
+        """ Make sure the stored bind DN is encoded correctly upon access
+        """
+        bind_dn = dn or getattr(self, 'bind_dn', '')
+
+        if not isinstance(bind_dn, unicode):
+            bind_dn = bind_dn.decode(self.api_encoding)
+
+        return bind_dn.encode(self.ldap_encoding)
+
 

@@ -4,6 +4,17 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Performing more rigorous input checking for DNs
+
+- Made encoding/decoding more flexible by adding configuration 
+  flags for the encoding used by the LDAP server and the 
+  encoding for calls to and return values from the connection API.
+  The default is backwards compatible (UTF-8 for the LDAP server 
+  encoding, and Latin-15 for the API encoding).
+
+- Factored the connection tests module into a series of modules,
+  it was getting large and unwieldy.
+
 - move the actual python-ldap connection from an attribute into
   a module-level cache since those connections cannot be
   pickled.
