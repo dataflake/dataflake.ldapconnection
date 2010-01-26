@@ -391,9 +391,10 @@ class LDAPConnection(object):
         - if "value" is unicode, it will be encoded to self.ldap_encoding, but
           only if self.ldap_encoding is set.
         - if "value" is not unicode, it is assumed to be encoded as 
-          self.api_encoding. It is decoded and encoded to self.ldap_encoding, 
-          unless self.api_encoding and self.ldap_encoding are identical. In
-          that case the passed-in value is handed back unchanged.
+          self.api_encoding. It is decoded and encoded to self.ldap_encoding
+          if self.ldap_encoding is set, unless self.api_encoding and 
+          self.ldap_encoding are identical. In that case the passed-in value 
+          is handed back unchanged.
         """
         if value is None:
             return None
@@ -404,8 +405,10 @@ class LDAPConnection(object):
 
         else:
             if self.api_encoding != self.ldap_encoding:
-                u_value = value.decode(self.api_encoding)
-                value = u_value.encode(self.ldap_encoding)
+                value = value.decode(self.api_encoding)
+
+                if self.ldap_encoding:
+                    value = value.encode(self.ldap_encoding)
         
         return value
 
@@ -415,9 +418,10 @@ class LDAPConnection(object):
         - if "value" is unicode, it will be encoded to self.api_encoding, but
           only if self.ldap_encoding is set.
         - if "value" is not unicode, it is assumed to be encoded as 
-          self.ldap_encoding. It is decoded and encoded to self.api_encoding, 
-          unless self.ldap_encoding and self.api_encoding are identical. In
-          that case the passed-in value is handed back unchanged.
+          self.ldap_encoding. It is decoded and encoded to self.api_encoding
+          if self.api_encoding is set, unless self.ldap_encoding and 
+          self.api_encoding are identical. In that case the passed-in value 
+          is handed back unchanged.
         """
         if value is None:
             return None
@@ -428,8 +432,10 @@ class LDAPConnection(object):
 
         else:
             if self.api_encoding != self.ldap_encoding:
-                u_value = value.decode(self.ldap_encoding)
-                value = u_value.encode(self.api_encoding)
+                value = value.decode(self.ldap_encoding)
+
+                if self.api_encoding:
+                    value = value.encode(self.api_encoding)
         
         return value
 

@@ -21,6 +21,10 @@ from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UNICODE
+from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+from dataflake.ldapconnection.tests.dummy import ISO_8859_7_ENCODED
+from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UNICODE
+from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UTF8
 
 class ConnectionBasicTests(LDAPConnectionTests):
 
@@ -60,6 +64,59 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.assertEqual(conn.c_factory, 'factory')
         self.assertEqual(conn.logger(), 'logger')
 
+    def test_encode_incoming(self):
+        conn = self._makeSimple()
+
+        conn.api_encoding = None
+        conn.ldap_encoding = None
+        self.assertEquals( conn._encode_incoming(ISO_8859_7_UNICODE)
+                         , ISO_8859_7_UNICODE
+                         )
+
+        conn.api_encoding = 'iso-8859-7'
+        conn.ldap_encoding = None
+        self.assertEquals( conn._encode_incoming(ISO_8859_7_ENCODED)
+                         , ISO_8859_7_UNICODE
+                         )
+
+        conn.api_encoding = None
+        conn.ldap_encoding = 'iso-8859-7'
+        self.assertEquals( conn._encode_incoming(ISO_8859_7_UNICODE)
+                         , ISO_8859_7_ENCODED
+                         )
+
+        conn.api_encoding = 'iso-8859-7'
+        conn.ldap_encoding = 'UTF-8'
+        self.assertEquals( conn._encode_incoming(ISO_8859_7_ENCODED)
+                         , ISO_8859_7_UTF8
+                         )
+
+    def test_encode_outgoing(self):
+        conn = self._makeSimple()
+
+        conn.api_encoding = None
+        conn.ldap_encoding = None
+        self.assertEquals( conn._encode_outgoing(ISO_8859_7_UNICODE)
+                         , ISO_8859_7_UNICODE
+                         )
+
+        conn.api_encoding = 'iso-8859-7'
+        conn.ldap_encoding = None
+        self.assertEquals( conn._encode_outgoing(ISO_8859_7_UNICODE)
+                         , ISO_8859_7_ENCODED
+                         )
+
+        conn.api_encoding = None
+        conn.ldap_encoding = 'iso-8859-7'
+        self.assertEquals( conn._encode_outgoing(ISO_8859_7_ENCODED)
+                         , ISO_8859_7_UNICODE
+                         )
+
+        conn.api_encoding = 'iso-8859-7'
+        conn.ldap_encoding = 'UTF-8'
+        self.assertEquals( conn._encode_outgoing(ISO_8859_7_UTF8)
+                         , ISO_8859_7_ENCODED
+                         )
 
 def test_suite():
     import sys

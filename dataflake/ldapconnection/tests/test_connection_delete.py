@@ -20,7 +20,7 @@ import unittest
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UNICODE
+from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
 class ConnectionDeleteTests(LDAPConnectionTests):
 
@@ -34,8 +34,7 @@ class ConnectionDeleteTests(LDAPConnectionTests):
     def test_delete_authentication(self):
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
-        bind_dn_unicode = u'cn=%s,dc=localhost' % ISO_8859_1_UNICODE
-        bind_dn_serverencoded = bind_dn_unicode.encode(conn.ldap_encoding)
+        bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
         conn.delete('cn=foo', bind_dn=bind_dn_apiencoded, bind_pwd='foo')
         connection = conn._getConnection()
         self.assertEqual(connection.binduid, bind_dn_serverencoded)

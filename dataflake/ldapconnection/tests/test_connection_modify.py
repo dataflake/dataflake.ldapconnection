@@ -20,7 +20,7 @@ import unittest
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UNICODE
+from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
 class ConnectionModifyTests(LDAPConnectionTests):
 
@@ -42,8 +42,7 @@ class ConnectionModifyTests(LDAPConnectionTests):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
-        bind_dn_unicode = u'cn=%s,dc=localhost' % ISO_8859_1_UNICODE
-        bind_dn_serverencoded = bind_dn_unicode.encode(conn.ldap_encoding)
+        bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
         import ldap
         conn.modify( 'cn=foo'
                    , mod_type=ldap.MOD_ADD

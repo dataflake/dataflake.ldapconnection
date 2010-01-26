@@ -20,7 +20,7 @@ import unittest
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UNICODE
+from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
 class ConnectionSearchTests(LDAPConnectionTests):
 
@@ -34,8 +34,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
     def test_search_authentication(self):
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
-        bind_dn_unicode = u'cn=%s,dc=localhost' % ISO_8859_1_UNICODE
-        bind_dn_serverencoded = bind_dn_unicode.encode(conn.ldap_encoding)
+        bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
         response = conn.search( 'o=base'
                               , 'scope'
                               , bind_dn=bind_dn_apiencoded
@@ -61,12 +60,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
 
     def test_search_nonascii(self):
         of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ( 'dn'
-                   , { 'a': [ISO_8859_1_UNICODE.encode('UTF-8')]
-                     , 'b': ISO_8859_1_UNICODE.encode('UTF-8')
-                     }
-                   )
-                  ]
+        of.res = [('dn', {'a': [ISO_8859_1_UTF8], 'b': ISO_8859_1_UTF8 })]
         def factory(conn_string, who='', cred=''):
             return of
         conn = self._makeOne('host', 636, 'ldap', factory)
