@@ -7,6 +7,9 @@ simplified methods for inserting, modifying, searching and deleting
 records in the LDAP directory tree. Failover/redundancy can be 
 achieved by supplying connection data for more than one LDAP server.
 
+API examples
+------------
+
 Instantiating a connection object:
 
 .. code-block:: python
