@@ -64,8 +64,21 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.assertEqual(conn.c_factory, 'factory')
         self.assertEqual(conn.logger(), 'logger')
 
+    def test_constructor_unicode_bind_dn(self):
+        bind_dn_unicode = u'cn=%s,dc=localhost' % ISO_8859_1_UNICODE
+        conn = self._makeOne( 'localhost'
+                            , 389
+                            , 'ldap'
+                            , 'factory'
+                            , bind_dn=bind_dn_unicode
+                            , bind_pwd='foo'
+                            )
+        self.assertEqual(conn.bind_dn, bind_dn_unicode)
+
     def test_encode_incoming(self):
         conn = self._makeSimple()
+
+        self.assertEquals(conn._encode_incoming(None), None)
 
         conn.api_encoding = None
         conn.ldap_encoding = None
@@ -93,6 +106,8 @@ class ConnectionBasicTests(LDAPConnectionTests):
 
     def test_encode_outgoing(self):
         conn = self._makeSimple()
+
+        self.assertEquals(conn._encode_outgoing(None), None)
 
         conn.api_encoding = None
         conn.ldap_encoding = None

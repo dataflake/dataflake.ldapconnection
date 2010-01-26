@@ -27,6 +27,8 @@ class UtilsTest(unittest.TestCase):
         dn_clean = 'cn=Joe Miller\\, Sr.,ou=odds\\+sods \\<1\\>,dc=host\\;new'
         self.assertEquals(escape_dn(dn), dn_clean)
 
+        self.assertEquals(escape_dn(None), None)
+
 
 def test_suite():
     import sys

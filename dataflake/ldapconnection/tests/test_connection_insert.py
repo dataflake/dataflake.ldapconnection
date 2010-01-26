@@ -66,11 +66,8 @@ class ConnectionInsertTests(LDAPConnectionTests):
         self.assertRaises(RuntimeError, conn.insert, 'dc=localhost', 'cn=jens')
 
     def test_insert_referral(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
         import ldap
+        of = DummyLDAPObjectFactory('conn_string')
         of.add_exc = ( ldap.REFERRAL
                      , {'info':'please go to ldap://otherhost:1389'}
                      )
