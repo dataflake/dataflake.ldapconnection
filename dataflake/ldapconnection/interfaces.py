@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2008-2009 Jens Vagelpohl and Contributors. All Rights Reserved.
+# Copyright (c) 2008-2010 Jens Vagelpohl and Contributors. All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
 # Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
@@ -21,9 +21,8 @@ class ILDAPConnection(Interface):
     """ ILDAPConnection interface
 
     ILDAPConnection instances provide a simplified way to talk to 
-    a LDAP server. It allows defining one or more server connections 
-    that allow for automatic failover in case the current connection
-    fails.
+    a LDAP server. They allow defining one or more server connections 
+    for automatic failover in case one LDAP server becomes unavailable.
     """
 
     def addServer(host, port, protocol, conn_timeout=-1, op_timeout=-1):
@@ -49,7 +48,7 @@ class ILDAPConnection(Interface):
 
         Please note: I you remove the server definition of a server that 
         is currently being used, that connection will continue to be 
-        used until it fails or until the process is restarted.
+        used until it fails or until the Python process is restarted.
         """
 
     def connect(bind_dn=None, bind_pwd=None):
@@ -68,6 +67,8 @@ class ILDAPConnection(Interface):
         other operations call it implicitly.
 
         Raises RuntimeError if no server definitions are available.
+        If all defined server connections fail the LDAP exception 
+        thrown by the last attempted connection is re-raised.
         """
 
     def search( base
@@ -114,8 +115,8 @@ class ILDAPConnection(Interface):
         Multiple values may be expressed as a single string if the values 
         are semicolon-delimited.
         Values can be marked as binary values, meaning they are not encoded
-        as UTF-8 before sending the to the LDAP server, by appending 
-        ';binary' to the key.
+        in the encoding specified as the server encoding before being sent 
+        to the LDAP server, by appending ';binary' to the key.
 
         In order to perform the operation using credentials other than the
         credentials configured on the instance a DN and password may be

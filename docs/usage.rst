@@ -30,13 +30,13 @@ the missing record and find it when searching again:
     >>> data = { 'objectClass': ['top', 'inetOrgPerson']
     ...        , 'cn': 'testing'
     ...        , 'sn': 'Lastname'
-    ...        , 'givenName': 'Fistname'
+    ...        , 'givenName': 'Firstname'
     ...        , 'mail': 'test@test.com'
     ...        , 'userPassword': '5ecret'
     ...        }
     >>> conn.insert('ou=users,dc=localhost', 'cn=testing', attrs=data, bind_dn='cn=Manager,dc=localhost', bind_pwd='secret')
     >>> conn.search('ou=users,dc=localhost', fltr='(cn=testing)')
-    {'exception': '', 'results': [{'dn': 'cn=testing,ou=users,dc=localhost', 'cn': ['testing'], 'objectClass': ['top', 'inetOrgPerson'], 'userPassword': ['5ecret'], 'sn': ['Lastname'], 'mail': ['test@test.com'], 'givenName': ['Fistname']}], 'size': 1}
+    {'exception': '', 'results': [{'dn': 'cn=testing,ou=users,dc=localhost', 'cn': ['testing'], 'objectClass': ['top', 'inetOrgPerson'], 'userPassword': ['5ecret'], 'sn': ['Lastname'], 'mail': ['test@test.com'], 'givenName': ['Firstname']}], 'size': 1}
 
 We can edit an existing record:
 
@@ -59,3 +59,22 @@ As the last step, we will delete our testing record:
 
 The :ref:`api_interfaces_section` page contains more
 information about the connection APIs.
+
+
+Handling string encoding for input and output values
+----------------------------------------------------
+
+LDAP servers expect values sent to them in specific string encodings.
+Standards-compliant LDAP servers use UTF-8. They use the same encoding 
+for values returned e.g. by a search. This server-side encoding may not 
+be convenient for communicating with the :mod:`dataflake.ldapconnection` 
+API itself. For this reason the server-side encoding and API encoding 
+can be set individually on connection instances using the attributes 
+``ldap_encoding`` and ``api_encoding``, respectively. The connection 
+instance handles all string encoding transparently.
+
+By default, instances use UTF-8 as ``ldap_encoding`` and ISO-8859-1 
+(Latin-1) as ``api_encoding``. You can assign any valid Python codec 
+name to these attributes. Assigning an empty value or None means that 
+unencoded unicode strings are used.
+

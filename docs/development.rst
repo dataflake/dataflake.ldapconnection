@@ -6,7 +6,8 @@ Development
 Getting the source code
 -----------------------
 The source code is maintained in the Dataflake Subversion 
-repository. To check out the trunk::
+repository at `http://svn.dataflake.org <http://svn.dataflake.org/>`_. 
+To check out the trunk::
 
   svn co http://svn.dataflake.org/svn/dataflake.ldapconnection/trunk/
 

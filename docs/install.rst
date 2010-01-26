@@ -6,12 +6,9 @@ run :mod:`dataflake.ldapconnection`.  Development of
 :mod:`dataflake.ldapconnection` is done primarily under Python 2.6, so 
 that version is recommended.
 
-.. warning:: To succesfully install :mod:`dataflake.ldapconnection`, 
-   you will need an environment capable of compiling Python C code.  
-   See the documentation about installing, e.g. ``gcc`` and 
-   ``python-devel`` for your system.  You will also need 
-   :term:`setuptools` installed on within your Python system in order 
-   to run the ``easy_install`` command.
+.. warning:: To successfully install :mod:`dataflake.ldapconnection`, 
+   you will need :term:`setuptools` installed on your Python system 
+   in order to run the ``easy_install`` command.
 
 It is advisable to install :mod:`dataflake.ldapconnection` into a
 :term:`virtualenv` in order to obtain isolation from any "system"
@@ -24,6 +21,9 @@ After you've got the requisite dependencies installed, you may install
 following command::
 
   $ easy_install dataflake.ldapconnection
+
+If you use :mod:`zc.buildout` you can add :mod:`dataflake.ldapconnection`
+to the necessary ``egss`` section to have it pulled in automatically.
 
 When you ``easy_install`` :mod:`dataflake.ldapconnection`, the
 :term:`python-ldap` libraries are installed if they are not present.
