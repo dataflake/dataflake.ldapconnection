@@ -132,7 +132,7 @@ class LDAPConnection(object):
                     if server.get('start_tls', None):
                         conn.start_tls_s()
                     break
-                except (ldap.SERVER_DOWN, ldap.TIMEOUT), e:
+                except (ldap.SERVER_DOWN, ldap.TIMEOUT, ldap.LOCAL_ERROR), e:
                     continue
 
             if conn is None:
