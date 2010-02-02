@@ -28,6 +28,11 @@ class ILDAPConnection(Interface):
     def addServer(host, port, protocol, conn_timeout=-1, op_timeout=-1):
         """ Add a server definition
 
+        `protocol` can be any one of ``ldap`` (unencrypted traffic), 
+        ``ldaps`` (encrypted traffic to a separate port), ``ldaptls``
+        (sets up encrypted traffic on the normal unencrypted port), or
+        ``ldapi`` (trafic through a UNIX domain socket on the file system).
+
         The `conn_timeout` argument defines the number of seconds to wait
         until a new connection attempt is considered failed, which means 
         the next server is tried if it has been defined. -1 means 

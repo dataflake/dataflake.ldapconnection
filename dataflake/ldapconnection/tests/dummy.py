@@ -35,6 +35,7 @@ class DummyLDAPObjectFactory:
     deleted = False
     del_exc = None
     deleted_dn = None
+    start_tls_called = False
 
     def __init__(self, conn_string, who='', cred=''):
         self.conn_string = conn_string
@@ -98,6 +99,9 @@ class DummyLDAPObjectFactory:
             self.del_exc = None
             raise exception
         self.deleted_dn = dn
+
+    def start_tls_s(self):
+        self.start_tls_called = True
 
 
 class ErrorLDAPObjectFactory:

@@ -4,6 +4,12 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Feature: You can now add server definitions for servers that 
+  support the StartTLS extended operation. Whereas the existing 
+  secure connections using the ``ldaps`` protocol are encrypted 
+  throughout, StartTLS is used through an unencrypted connection
+  to request all further traffic to be encrypted.
+
 
 1.0b1 (2010-02-01)
 ------------------

@@ -27,9 +27,10 @@ class ConnectionConnectTests(LDAPConnectionTests):
 
     def test_connect_initial_noargs(self):
         conn = self._makeSimple()
-        conn = conn.connect()
-        self.assertEqual(conn.binduid, u'')
-        self.assertEqual(conn.bindpwd, '')
+        connection = conn.connect()
+        self.assertEqual(connection.binduid, u'')
+        self.assertEqual(connection.bindpwd, '')
+        self.failIf(connection.start_tls_called)
 
     def test_connect_initial_bind_dn_not_None(self):
         conn = self._makeSimple()
@@ -57,6 +58,14 @@ class ConnectionConnectTests(LDAPConnectionTests):
         conn = self._makeOne('host', 636, 'ldap', factory, op_timeout=99)
         connection = conn.connect()
         self.assertEquals(connection.timeout, 99)
+
+    def test_connect_ldap_starttls(self):
+        of = DummyLDAPObjectFactory('conn_string')
+        def factory(conn_string, who='', cred=''):
+            return of
+        conn = self._makeOne('host', 636, 'ldaptls', factory, op_timeout=99)
+        connection = conn.connect()
+        self.failUnless(connection.start_tls_called)
 
     def test_connect_noserver_raises(self):
         conn = self._makeSimple()

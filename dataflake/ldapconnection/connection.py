@@ -83,11 +83,16 @@ class LDAPConnection(object):
     def addServer(self, host, port, protocol, conn_timeout=-1, op_timeout=-1):
         """ Add a server definition to the list of servers used
         """
+        start_tls = False
+        if protocol == 'ldaptls':
+            protocol = 'ldap'
+            start_tls = True
         l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
         server_url = l.initializeUrl()
         self.servers[server_url] = { 'url' : server_url
                                    , 'conn_timeout' : conn_timeout
                                    , 'op_timeout' : op_timeout
+                                   , 'start_tls': start_tls
                                    }
 
     def removeServer(self, host, port, protocol):
@@ -124,6 +129,8 @@ class LDAPConnection(object):
                                         , conn_timeout=server['conn_timeout']
                                         , op_timeout=server['op_timeout']
                                         )
+                    if server.get('start_tls', None):
+                        conn.start_tls_s()
                     break
                 except (ldap.SERVER_DOWN, ldap.TIMEOUT), e:
                     continue

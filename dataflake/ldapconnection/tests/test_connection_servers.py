@@ -41,12 +41,34 @@ class ConnectionServerTests(LDAPConnectionTests):
                          , [ { 'url': 'ldap://host:636'
                                , 'op_timeout': -1
                                , 'conn_timeout': -1
+                               , 'start_tls': False
                                }
                              , { 'url': 'ldaps://localhost:636'
                                , 'op_timeout': 10
                                , 'conn_timeout': 5
+                               , 'start_tls': False
                                }
                              ]
+                         )
+
+    def test_add_server_ldaptls(self):
+        conn = self._makeSimple()
+        conn.addServer('localhost',389,'ldaptls',conn_timeout=5,op_timeout=10)
+        servers = conn.servers.values()
+
+        self.assertEquals(len(servers), 2)
+        self.assertEquals( servers
+                         , [ { 'url': 'ldap://localhost:389'
+                             , 'op_timeout': 10
+                             , 'conn_timeout': 5
+                             , 'start_tls': True
+                             }
+                           , { 'url': 'ldap://host:636'
+                             , 'op_timeout': -1
+                             , 'conn_timeout': -1
+                             , 'start_tls': False
+                             }
+                           ]
                          )
 
     def test_add_server_existing(self):
