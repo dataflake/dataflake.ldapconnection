@@ -25,192 +25,137 @@ from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 class ConnectionModifyTests(LDAPConnectionTests):
 
     def test_modify_noauthentication(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo')
         import ldap
-        conn.modify('cn=foo', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
-        self.assertEqual(of.binduid, u'')
-        self.assertEqual(of.bindpwd, '')
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_ADD
+                   , attrs={'b':'b'}
+                   )
+        connection = conn._getConnection()
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, u'')
+        self.assertEqual(bindpwd, '')
 
     def test_modify_authentication(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo')
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
+        self._addRecord(bind_dn_serverencoded, userPassword='foo')
         import ldap
-        conn.modify( 'cn=foo'
+        conn.modify( 'cn=foo,dc=localhost'
                    , mod_type=ldap.MOD_ADD
                    , attrs={'b':'b'}
                    , bind_dn=bind_dn_apiencoded
                    , bind_pwd='foo'
                    )
-        self.assertEqual(of.binduid, bind_dn_serverencoded)
-        self.assertEqual(of.bindpwd, 'foo')
+        connection = conn._getConnection()
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, bind_dn_serverencoded)
+        self.assertEqual(bindpwd, 'foo')
 
     def test_modify_explicit_add(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo')
         import ldap
-        conn.modify('cn=foo', mod_type=ldap.MOD_ADD, attrs={'b':'b'})
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        self.assertEqual(mode, ldap.MOD_ADD)
-        self.assertEqual(key, 'b')
-        self.assertEqual(values, ['b'])
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_ADD
+                   , attrs={'b':'b'}
+                   )
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['b'], ['b'])
 
         # Trying to add an empty new value should not cause more operations
-        conn.modify('cn=foo', mod_type=ldap.MOD_ADD, attrs={'c':''})
-        self.assertEqual(len(of.modifications), 1)
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_ADD
+                   , attrs={'c':''}
+                   )
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.failIf(rec.get('c'))
 
     def test_modify_explicit_modify(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a', 'b': ['x','y','z']},) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        attrs = {'a':'a', 'b': ['x','y','z']}
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
         import ldap
-        conn.modify( 'cn=foo'
+        conn.modify( 'cn=foo,dc=localhost'
                    , mod_type=ldap.MOD_REPLACE
                    , attrs={'a':'y', 'b': ['f','g','h']}
                    )
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        mods = of.modifications
-        self.assertEqual(len(mods), 2)
-        self.failUnless((ldap.MOD_REPLACE, 'a', ['y']) in mods)
-        self.failUnless((ldap.MOD_REPLACE, 'b', ['f', 'g', 'h']) in mods)
-
-        # Trying to modify a non-existing key with an empty value should
-        # not result in more operations
-        conn.modify('cn=foo', mod_type=ldap.MOD_REPLACE, attrs={'x':''})
-        self.assertEqual(len(of.modifications), 1)
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['a'], ['y'])
+        self.assertEquals(rec['b'], ['f','g','h'])
 
     def test_modify_explicit_delete(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs={'a': 'a', 'b':'b'})
         import ldap
-        conn.modify('cn=foo', mod_type=ldap.MOD_DELETE, attrs={'a':'y'})
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        self.assertEqual(mode, ldap.MOD_DELETE)
-        self.assertEqual(key, 'a')
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_DELETE
+                   , attrs={'a':'a'}
+                   )
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.failIf(rec.get('a'))
 
         # Tryng to modify the record by providing an empty non-existing key
         # should not result in more operations.
-        conn.modify('cn=foo', mod_type=ldap.MOD_DELETE, attrs={'b':''})
-        self.assertEqual(len(of.modifications), 1)
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_DELETE
+                   , attrs={'b':''}
+                   )
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['b'], ['b'])
 
     def test_modify_implicit_add(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('cn=foo', attrs={'b':'b'})
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        import ldap
-        self.assertEqual(mode, ldap.MOD_ADD)
-        self.assertEqual(key, 'b')
-        self.assertEqual(values, ['b'])
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs={'a':'a'})
+        conn.modify('cn=foo,dc=localhost', attrs={'b':'b'})
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['b'], ['b'])
 
         # Trying to add an empty new value should not cause more operations
-        conn.modify('cn=foo', attrs={'c':''})
-        self.assertEqual(len(of.modifications), 1)
+        conn.modify('cn=foo,dc=localhost', attrs={'c':''})
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.failIf(rec.get('c'))
 
     def test_modify_implicit_modify(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('cn=foo', attrs={'a':'y'})
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        import ldap
-        self.assertEqual(mode, ldap.MOD_REPLACE)
-        self.assertEqual(key, 'a')
-        self.assertEqual(values, ['y'])
-
-        # Trying to modify a non-existing key should
-        # not result in more operations
-        conn.modify('cn=foo', attrs={'b':'z'})
-        self.assertEqual(len(of.modifications), 1)
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs={'a':'a'})
+        conn.modify('cn=foo,dc=localhost', attrs={'a':'y'})
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['a'], ['y'])
 
     def test_modify_implicit_delete(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('cn=foo', attrs={'a':''})
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        import ldap
-        self.assertEqual(mode, ldap.MOD_DELETE)
-        self.assertEqual(key, 'a')
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs={'a':'a'})
+        conn.modify('cn=foo,dc=localhost', attrs={'a':''})
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.failIf(rec.get('a'))
 
         # Trying to modify the record by providing an empty non-existing key
         # should not result in more operations.
-        conn.modify('cn=foo', attrs={'b':''})
-        self.assertEqual(len(of.modifications), 1)
+        conn.modify('cn=foo,dc=localhost', attrs={'b':''})
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.failIf(rec.get('b'))
 
     def test_modify_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
         self.assertRaises(RuntimeError, conn.modify, 'cn=foo', {})
 
     def test_modify_binary(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('cn=foo', attrs={'a;binary':u'y'})
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        self.assertEqual(key, 'a')
-        self.assertEqual(values, u'y')
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs={'objectguid':'a'})
+        conn.modify('cn=foo,dc=localhost', attrs={'objectguid;binary': u'y'})
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['objectguid'], u'y')
 
     def test_modify_modrdn(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('a=oldvalue,dc=localhost', {'a':'oldvalue'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('a=oldvalue,dc=localhost', attrs={'a':'newvalue'})
-        self.failUnless(of.modified_rdn)
-        self.assertEqual(of.old_dn, 'a=oldvalue,dc=localhost')
-        self.assertEqual(of.new_rdn, 'a=newvalue')
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'a=newvalue,dc=localhost')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        self.assertEqual(key, 'a')
-        self.assertEqual(values, ['newvalue'])
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo')
+        conn.modify('cn=foo,dc=localhost', attrs={'cn':'bar'})
+        rec = conn.search('dc=localhost', fltr='(cn=bar)')['results'][0]
+        self.assertEquals(rec['cn'], ['bar'])
 
     def test_modify_referral(self):
         of = DummyLDAPObjectFactory('conn_string')

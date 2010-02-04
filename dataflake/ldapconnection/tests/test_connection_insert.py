@@ -28,13 +28,15 @@ class ConnectionInsertTests(LDAPConnectionTests):
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', attrs={})
         connection = conn._getConnection()
-        self.assertEqual(connection.binduid, '')
-        self.assertEqual(connection.bindpwd, '')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, '')
+        self.assertEqual(bindpwd, '')
 
     def test_insert_authentication(self):
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
+        self._addRecord(bind_dn_serverencoded, userPassword='foo')
         conn.insert( 'dc=localhost'
                    , 'cn=jens'
                    , attrs={}
@@ -42,8 +44,9 @@ class ConnectionInsertTests(LDAPConnectionTests):
                    , bind_pwd='foo'
                    )
         connection = conn._getConnection()
-        self.assertEqual(connection.binduid, bind_dn_serverencoded)
-        self.assertEqual(connection.bindpwd, 'foo')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, bind_dn_serverencoded)
+        self.assertEqual(bindpwd, 'foo')
 
     def test_insert(self):
         attributes = { 'cn' : 'jens'
@@ -52,14 +55,16 @@ class ConnectionInsertTests(LDAPConnectionTests):
                      }
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', attrs=attributes)
-        connection = conn._getConnection()
-        self.failUnless(connection.added)
-        self.assertEqual(len(connection.added_values.keys()), 1)
-        dn, values = connection.added_values.items()[0]
-        self.assertEqual(dn, 'cn=jens' + ',' + 'dc=localhost')
-        self.assertEqual(values['cn'], ['jens'])
-        self.assertEqual(values['multivaluestring'], ['val1','val2','val3'])
-        self.assertEqual(values['multivaluelist'], ['val1','val2'])
+
+        results = conn.search('dc=localhost', fltr='(cn=jens)')
+        self.assertEquals(len(results['results']), 1)
+        self.assertEquals(results['size'], 1)
+
+        record = results['results'][0]
+        self.assertEquals(record['dn'], 'cn=jens,dc=localhost')
+        self.assertEquals(record['cn'], ['jens'])
+        self.assertEquals(record['multivaluestring'], ['val1','val2','val3'])
+        self.assertEquals(record['multivaluelist'], ['val1','val2'])
 
     def test_insert_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
@@ -85,12 +90,14 @@ class ConnectionInsertTests(LDAPConnectionTests):
 
     def test_insert_binary(self):
         conn = self._makeSimple()
-        conn.insert('dc=localhost', 'cn=jens', {'myvalue;binary' : u'a'})
-        connection = conn._getConnection()
-        self.failUnless(connection.added)
-        self.assertEqual(len(connection.added_values.keys()), 1)
-        dn, values = connection.added_values.items()[0]
-        self.assertEqual(values['myvalue'], u'a')
+        conn.insert('dc=localhost', 'cn=jens', {'objectguid;binary' : u'a'})
+
+        results = conn.search('dc=localhost', fltr='(cn=jens)')
+        self.assertEquals(len(results['results']), 1)
+        self.assertEquals(results['size'], 1)
+
+        record = results['results'][0]
+        self.assertEquals(record['objectguid'], u'a')
 
 
 def test_suite():

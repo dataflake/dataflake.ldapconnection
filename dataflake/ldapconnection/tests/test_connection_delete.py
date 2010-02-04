@@ -28,24 +28,30 @@ class ConnectionDeleteTests(LDAPConnectionTests):
         conn = self._makeSimple()
         conn.delete('cn=foo')
         connection = conn._getConnection()
-        self.assertEqual(connection.binduid, u'')
-        self.assertEqual(connection.bindpwd, '')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, u'')
+        self.assertEqual(bindpwd, '')
 
     def test_delete_authentication(self):
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
+        self._addRecord(bind_dn_serverencoded, userPassword='foo')
         conn.delete('cn=foo', bind_dn=bind_dn_apiencoded, bind_pwd='foo')
         connection = conn._getConnection()
-        self.assertEqual(connection.binduid, bind_dn_serverencoded)
-        self.assertEqual(connection.bindpwd, 'foo')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, bind_dn_serverencoded)
+        self.assertEqual(bindpwd, 'foo')
 
     def test_delete(self):
+        self._addRecord('cn=foo,dc=localhost')
         conn = self._makeSimple()
-        conn.delete('cn=foo')
-        connection = conn._getConnection()
-        self.failUnless(connection.deleted)
-        self.assertEqual(connection.deleted_dn, 'cn=foo')
+        results = conn.search('dc=localhost', '(cn=foo)')
+        self.assertEquals(results['results'], [{'dn': 'cn=foo'}])
+
+        conn.delete('cn=foo,dc=localhost')
+        results = conn.search('dc=localhost', '(cn=foo)')
+        self.failIf(results['results'])
 
     def test_delete_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)

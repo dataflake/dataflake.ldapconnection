@@ -300,7 +300,10 @@ def clearTree():
     TREE.clear()
 
 def addTreeItems(dn):
-    """ Add structure directly to the tree given a DN """
+    """ Add structure directly to the tree given a DN 
+
+    returns the last added tree position for convenience
+    """
     elems = explode_dn(dn)
     elems.reverse()
     tree_pos = TREE
@@ -310,6 +313,8 @@ def addTreeItems(dn):
             tree_pos[elem] = {}
 
         tree_pos = tree_pos[elem]
+
+    return tree_pos
 
 def apply_filter(tree_pos, base, fltr):
     res = []
@@ -351,11 +356,13 @@ def apply_filter(tree_pos, base, fltr):
 
 class FakeLDAPConnection:
 
-    def __init__(self):
+    start_tls_called = False
+
+    def __init__(self, *args, **kw):
         pass
 
     def set_option(self, option, value):
-        pass
+        setattr(self, str(option), value)
 
     def simple_bind_s(self, binduid, bindpwd):
         self._last_bind = (self.simple_bind_s, (binduid, bindpwd), {})
@@ -392,16 +399,24 @@ class FakeLDAPConnection:
         elems = explode_dn(base)
         elems.reverse()
         tree_pos = TREE
+        tree_pos_dn = ''
 
         for elem in elems:
+            if not tree_pos_dn:
+                tree_pos_dn = elem
+            else:
+                tree_pos_dn = '%s,%s' % (elem, tree_pos_dn)
             if tree_pos.has_key(elem):
                 tree_pos = tree_pos[elem]
+            else:
+                # The base does not exist, we cannot find any records
+                return []
 
         q = parse_query(query)
 
         if cmp_query(q, ANY, strict=True):
             # Return all objects, no matter what class
-            if scope == ldap.SCOPE_BASE and tree_pos.get('dn', '') == base:
+            if scope == ldap.SCOPE_BASE and tree_pos_dn == base:
                 # Only if dn matches 'base'
                 return (([base, tree_pos],))
             else:
@@ -474,6 +489,8 @@ class FakeLDAPConnection:
         for elem in base:
             if tree_pos.has_key(elem):
                 tree_pos = tree_pos[elem]
+            else:
+                raise ldap.NO_SUCH_OBJECT(elem)
 
         if tree_pos.has_key(rdn):
             raise ldap.ALREADY_EXISTS
@@ -510,6 +527,8 @@ class FakeLDAPConnection:
         for elem in base:
             if tree_pos.has_key(elem):
                 tree_pos = tree_pos[elem]
+            else:
+                raise ldap.NO_SUCH_OBJECT(elem)
 
         rec = copy.deepcopy(tree_pos.get(rdn))
 
@@ -550,13 +569,13 @@ class FakeLDAPConnection:
         del tree_pos[rdn]
         tree_pos[new_rdn] = rec
 
+    def start_tls_s(self):
+        self.start_tls_called = True
+
 
 class ldapobject:
     class ReconnectLDAPObject(FakeLDAPConnection):
-        def __init__(self, *ignored):
-            pass
+        pass
 
     class SmartLDAPObject(FakeLDAPConnection):
-        def __init__(self, *args, **kw):
-            pass
-
+        pass

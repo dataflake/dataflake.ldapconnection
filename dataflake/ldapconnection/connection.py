@@ -314,7 +314,7 @@ class LDAPConnection(object):
 
         if res['size'] == 0:
             raise RuntimeError(
-                'LDAPDelegate.modify: Cannot find dn "%s"' % dn)
+                'LDAPConnection.modify: Cannot find dn "%s"' % dn)
 
         cur_rec = res['results'][0]
         mod_list = []
@@ -335,6 +335,11 @@ class LDAPConnection(object):
                     mod_list.append((ldap.MOD_REPLACE, key, values))
                 elif cur_rec.has_key(key) and values in ([''], []):
                     mod_list.append((ldap.MOD_DELETE, key, None))
+            elif values == [''] and mod_type in (ldap.MOD_ADD, ldap.MOD_DELETE):
+                continue
+            elif ( mod_type == ldap.MOD_DELETE and
+                   set(values) != set(cur_rec.get(key, [])) ):
+                continue
             else:
                 mod_list.append((mod_type, key, values))
 

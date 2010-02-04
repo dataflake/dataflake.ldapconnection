@@ -28,50 +28,52 @@ class ConnectionSearchTests(LDAPConnectionTests):
         conn = self._makeSimple()
         response = conn.search('o=base', 'scope')
         connection = conn._getConnection()
-        self.assertEqual(connection.binduid, u'')
-        self.assertEqual(connection.bindpwd, '')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, u'')
+        self.assertEqual(bindpwd, '')
 
     def test_search_authentication(self):
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
-        response = conn.search( 'o=base'
+        self._addRecord(bind_dn_serverencoded, userPassword='foo')
+        response = conn.search( 'dc=localhost'
                               , 'scope'
                               , bind_dn=bind_dn_apiencoded
                               , bind_pwd='foo'
                               )
         connection = conn._getConnection()
-        self.assertEqual(connection.binduid, bind_dn_serverencoded)
-        self.assertEqual(connection.bindpwd, 'foo')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, bind_dn_serverencoded)
+        self.assertEqual(bindpwd, 'foo')
 
     def test_search_simple(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a', 'b':['x','y','z']}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('o=base', 'scope')
+        conn = self._makeSimple()
+        conn.insert('dc=localhost', 'cn=foo', attrs={'a':'a','b':['x','y','z']})
+        response = conn.search('dc=localhost', fltr='(cn=foo)')
         self.assertEqual(response['size'], 1)
-        results = response['results']
-        self.assertEqual(len(results), 1)
-        self.assertEqual( results[0]
-                        , {'a': 'a', 'dn': 'dn', 'b': ['x', 'y', 'z']}
+        self.assertEqual(len(response['results']), 1)
+        self.assertEqual( response['results'][0]
+                        , { 'a': ['a']
+                          , 'dn': 'cn=foo,dc=localhost'
+                          , 'cn': ['foo']
+                          , 'b': ['x', 'y', 'z']
+                          }
                         )
 
     def test_search_nonascii(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [('dn', {'a': [ISO_8859_1_UTF8], 'b': ISO_8859_1_UTF8 })]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('o=base', 'scope')
+        conn = self._makeSimple()
+        attrs = {'a': [ISO_8859_1_ENCODED], 'b': ISO_8859_1_ENCODED }
+        conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
+        response = conn.search('dc=localhost', fltr='(cn=foo)')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
         self.assertEqual( results[0]
-                        , { 'dn': 'dn'
+                        , { 'dn': 'cn=foo,dc=localhost'
                           , 'a': [ISO_8859_1_ENCODED]
-                          , 'b': ISO_8859_1_ENCODED
+                          , 'b': [ISO_8859_1_ENCODED]
+                          , 'cn': ['foo']
                           }
                         )
 
@@ -136,16 +138,19 @@ class ConnectionSearchTests(LDAPConnectionTests):
     def test_search_binaryattribute(self):
         # A binary value will remain untouched, no transformation 
         # to and from UTF-8 will happen.
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'objectGUID':u'a'}) ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('o=base', 'scope')
+        conn = self._makeSimple()
+        attrs = {'objectguid;binary':u'a'}
+        conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
+        response = conn.search('dc=localhost', fltr='(cn=foo)')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0], {'objectGUID': u'a', 'dn': 'dn'})
+        self.assertEqual( results[0]
+                        , { 'dn': 'cn=foo,dc=localhost'
+                          , 'cn': ['foo']
+                          , 'objectguid': u'a'
+                          }
+                        )
 
 
 def test_suite():

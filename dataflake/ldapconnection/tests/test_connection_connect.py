@@ -18,52 +18,55 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ErrorLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+from dataflake.ldapconnection.tests.fakeldap import FakeLDAPConnection
 
 class ConnectionConnectTests(LDAPConnectionTests):
 
     def test_connect_initial_noargs(self):
         conn = self._makeSimple()
         connection = conn.connect()
-        self.assertEqual(connection.binduid, u'')
-        self.assertEqual(connection.bindpwd, '')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, u'')
+        self.assertEqual(bindpwd, '')
         self.failIf(connection.start_tls_called)
 
     def test_connect_initial_bind_dn_not_None(self):
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
-        conn = conn.connect(bind_dn_apiencoded, '')
-        self.assertEqual(conn.binduid, bind_dn_serverencoded)
-        self.assertEqual(conn.bindpwd, '')
+        self._addRecord(bind_dn_serverencoded, userPassword='')
+        connection = conn.connect(bind_dn_apiencoded, '')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, bind_dn_serverencoded)
+        self.assertEqual(bindpwd, '')
 
     def test_connect_non_initial(self):
         conn = self._makeSimple()
-        connection = conn.connect('cn=foo,dc=localhost', 'pass')
-        self.assertEqual(connection.binduid, 'cn=foo,dc=localhost')
-        connection = conn.connect(None, 'pass')
-        self.assertEqual(connection.binduid, conn.bind_dn)
+        self._addRecord('cn=foo,dc=localhost', userPassword='pass')
 
-    def test_connect_setting_timeout(self):
+        connection = conn.connect('cn=foo,dc=localhost', 'pass')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, 'cn=foo,dc=localhost')
+
+        connection = conn.connect(None, 'pass')
+        binduid, bindpwd = connection._last_bind[1]
+        self.assertEqual(binduid, conn.bind_dn)
+
+    def test_connect_timeout_default(self):
         conn = self._makeSimple()
         connection = conn.connect()
         self.failIf(getattr(connection, 'timeout', 0))
 
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory, op_timeout=99)
+    def test_connect_timeout_specified(self):
+        conn = self._makeOne('host', 636, 'ldap', self._factory, op_timeout=99)
         connection = conn.connect()
         self.assertEquals(connection.timeout, 99)
 
     def test_connect_ldap_starttls(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldaptls', factory, op_timeout=99)
+        conn = self._makeOne('host', 636, 'ldaptls', self._factory)
         connection = conn.connect()
         self.failUnless(connection.start_tls_called)
 

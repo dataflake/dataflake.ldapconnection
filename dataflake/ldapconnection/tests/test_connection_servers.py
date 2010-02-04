@@ -19,7 +19,7 @@ import ldapurl
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
+
 
 class ConnectionServerTests(LDAPConnectionTests):
 

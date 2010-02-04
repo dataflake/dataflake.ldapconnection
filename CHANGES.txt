@@ -10,6 +10,10 @@ Change log
   throughout, StartTLS is used through an unencrypted connection
   to request all further traffic to be encrypted.
 
+- Refactoring: Switch tests to using the fakeldap LDAP connection 
+  object wherever possible, and correct a few fakeldap and 
+  LDAPConnection misbehaviors along the way.
+
 
 1.0b1 (2010-02-01)
 ------------------

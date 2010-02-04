@@ -18,13 +18,13 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UNICODE
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 from dataflake.ldapconnection.tests.dummy import ISO_8859_7_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UNICODE
 from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UTF8
+from dataflake.ldapconnection.tests.fakeldap import FakeLDAPConnection
 
 class ConnectionBasicTests(LDAPConnectionTests):
 
@@ -41,7 +41,7 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.assertEqual(conn.bind_pwd, '')
         self.failIf(conn.read_only)
         self.assertEqual(conn._getConnection(), None)
-        self.assertEqual(conn.c_factory, DummyLDAPObjectFactory)
+        self.assertEqual(conn.c_factory, FakeLDAPConnection)
 
     def test_constructor(self):
         bind_dn_encoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
