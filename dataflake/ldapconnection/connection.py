@@ -24,7 +24,7 @@ from ldap.dn import explode_dn
 from ldap.dn import dn2str
 from ldap.dn import str2dn
 from ldap.filter import filter_format
-from ldap.ldapobject import SmartLDAPObject
+from ldap.ldapobject import ReconnectLDAPObject
 import ldapurl
 import logging
 
@@ -49,7 +49,7 @@ class LDAPConnection(object):
     implements(ILDAPConnection)
 
     def __init__( self, host='', port=389, protocol='ldap'
-                , c_factory=SmartLDAPObject, rdn_attr='', bind_dn=''
+                , c_factory=ReconnectLDAPObject, rdn_attr='', bind_dn=''
                 , bind_pwd='', read_only=False
                 , conn_timeout=-1, op_timeout=-1, logger=None
                 ):
@@ -133,6 +133,7 @@ class LDAPConnection(object):
                         conn.start_tls_s()
                     break
                 except (ldap.SERVER_DOWN, ldap.TIMEOUT, ldap.LOCAL_ERROR), e:
+                    conn = None
                     continue
 
             if conn is None:

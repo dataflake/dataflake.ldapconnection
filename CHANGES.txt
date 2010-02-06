@@ -4,6 +4,13 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Bug: python-ldap will no longer support the LDAP connection 
+  class ldap.ldapobject.SmartLDAPObject with version 2.3.11.
+  Replacing it with ReconnectLDAPObject.
+
+- Bug: If a connection raised an LDAP exception inside 
+  start_tls_s handling was broken.
+
 - Feature: You can now add server definitions for servers that 
   support the StartTLS extended operation. Whereas the existing 
   secure connections using the ``ldaps`` protocol are encrypted 
