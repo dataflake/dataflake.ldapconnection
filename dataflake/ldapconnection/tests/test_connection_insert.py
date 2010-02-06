@@ -18,7 +18,6 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
@@ -72,21 +71,16 @@ class ConnectionInsertTests(LDAPConnectionTests):
 
     def test_insert_referral(self):
         import ldap
-        of = DummyLDAPObjectFactory('conn_string')
-        of.add_exc = ( ldap.REFERRAL
-                     , {'info':'please go to ldap://otherhost:1389'}
-                     )
-        def factory(conn_string, who='', cred=''):
-            of.conn_string = conn_string
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
+        exc_arg = {'info':'please go to ldap://otherhost:1389'}
+        conn, ldap_connection = self._makeRaising( 'add_s'
+                                                 , ldap.REFERRAL
+                                                 , exc_arg
+                                                 )
         conn.insert('dc=localhost', 'cn=jens', attrs={'cn':['jens']})
-        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
-        self.failUnless(of.added)
-        self.assertEqual(len(of.added_values.keys()), 1)
-        dn, values = of.added_values.items()[0]
-        self.assertEqual(dn, 'cn=jens' + ',' + 'dc=localhost')
-        self.assertEqual(values['cn'], ['jens'])
+        self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
+        self.assertEquals( ldap_connection.args
+                         , ('cn=jens,dc=localhost', [('cn', ['jens'])])
+                         )
 
     def test_insert_binary(self):
         conn = self._makeSimple()

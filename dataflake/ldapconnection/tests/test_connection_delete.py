@@ -18,7 +18,6 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
@@ -58,19 +57,15 @@ class ConnectionDeleteTests(LDAPConnectionTests):
         self.assertRaises(RuntimeError, conn.delete, 'cn=foo')
 
     def test_delete_referral(self):
-        of = DummyLDAPObjectFactory('conn_string')
         import ldap
-        of.del_exc = ( ldap.REFERRAL
-                     , {'info':'please go to ldap://otherhost:1389'}
-                     )
-        def factory(conn_string, who='', cred=''):
-            of.conn_string = conn_string
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.delete('cn=foo')
-        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
-        self.failUnless(of.deleted)
-        self.assertEqual(of.deleted_dn, 'cn=foo')
+        exc_arg = {'info':'please go to ldap://otherhost:1389'}
+        conn, ldap_connection = self._makeRaising( 'delete_s'
+                                                 , ldap.REFERRAL
+                                                 , exc_arg
+                                                 )
+        conn.delete('cn=foo,dc=localhost')
+        self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
+        self.assertEquals(ldap_connection.args, ('cn=foo,dc=localhost',))
 
 
 def test_suite():

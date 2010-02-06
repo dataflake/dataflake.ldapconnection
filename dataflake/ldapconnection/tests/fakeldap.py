@@ -359,7 +359,8 @@ class FakeLDAPConnection:
     start_tls_called = False
 
     def __init__(self, *args, **kw):
-        pass
+        self.args = args
+        self.kwargs = kw
 
     def set_option(self, option, value):
         setattr(self, str(option), value)
@@ -572,10 +573,35 @@ class FakeLDAPConnection:
     def start_tls_s(self):
         self.start_tls_called = True
 
+    def result(self, msgid=ldap.RES_ANY, all=1, timeout=-1):
+        return ('partial', [('partial result', {'dn': 'partial result'})])
+
+
+class RaisingFakeLDAPConnection(FakeLDAPConnection):
+
+    def setExceptionAndMethod(self, raise_on, exc_class, exc_arg=None):
+        hideaway = '%s_old' % raise_on
+        setattr(self, hideaway, getattr(self, raise_on))
+        def func(*args, **kw):
+            setattr(self, raise_on, getattr(self, hideaway))
+            setattr(self, 'args', args)
+            setattr(self, 'kwargs', kw)
+            if exc_arg:
+                raise exc_class(exc_arg)
+            else:
+                raise exc_class
+            raise to_raise
+        setattr(self, raise_on, func)
+
+
+class FixedResultFakeLDAPConnection(FakeLDAPConnection):
+    search_results = []
+
+    def search_s( self, base, scope=ldap.SCOPE_SUBTREE,
+                  query='(objectClass=*)', attrs=() ):
+        return self.search_results
+
 
 class ldapobject:
     class ReconnectLDAPObject(FakeLDAPConnection):
-        pass
-
-    class SmartLDAPObject(FakeLDAPConnection):
         pass

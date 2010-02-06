@@ -18,7 +18,6 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
@@ -80,60 +79,51 @@ class ConnectionSearchTests(LDAPConnectionTests):
     def test_search_bad_results(self):
         # Make sure the resultset omits "useless" entries that may be
         # emitted by some servers, notable Microsoft ActiveDirectory.
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'})
-                 , ('dn2',['thisvalueisuseless']) 
-                 , ('dn3','anotheruselessvalue')
-                 , ('dn4', ('morebadstuff',))
-                 ]
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('o=base', 'scope')
+        bad_results = [ ('dn', {'a':'a'})
+                      , ('dn2',['thisvalueisuseless']) 
+                      , ('dn3','anotheruselessvalue')
+                      , ('dn4', ('morebadstuff',))
+                      ]
+        conn = self._makeFixedResultConnection(bad_results)
+        response = conn.search('dc=localhost', '(cn=foo)')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
 
     def test_search_partial_results(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.partial = (None, [('dn', {'a':'a'})])
         import ldap
-        of.search_exc = (ldap.PARTIAL_RESULTS, '')
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('o=base', 'scope')
+        conn, ldap_connection = self._makeRaising( 'search_s'
+                                                 , ldap.PARTIAL_RESULTS
+                                                 )
+        response = conn.search('dc=localhost', '(cn=foo)')
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
+        self.assertEqual(results[0], {'dn': 'partial result'})
 
     def test_search_referral(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
         import ldap
-        of.search_exc = ( ldap.REFERRAL
-                        , {'info':'please go to ldap://otherhost:1389'}
-                        )
-        def factory(conn_string, who='', cred=''):
-            of.conn_string = conn_string
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        response = conn.search('o=base', 'scope')
-        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
+        exc_arg = {'info':'please go to ldap://otherhost:1389'}
+        conn, ldap_connection = self._makeRaising( 'search_s'
+                                                 , ldap.REFERRAL
+                                                 , exc_arg
+                                                 )
+        response = conn.search('dc=localhost', '(cn=foo)')
+        self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
 
     def test_search_bad_referral(self):
-        of = DummyLDAPObjectFactory('conn_string')
         import ldap
-        of.search_exc = ( ldap.REFERRAL
-                        , {'info':'please go to BAD_URL'}
-                        )
-        def factory(conn_string, who='', cred=''):
-            of.conn_string = conn_string
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        self.assertRaises(ldap.CONNECT_ERROR, conn.search, 'o=base', 'scope')
+        exc_arg = {'info':'please go to BAD_URL'}
+        conn, ldap_connection = self._makeRaising( 'search_s'
+                                                 , ldap.REFERRAL
+                                                 , exc_arg
+                                                 )
+        self.assertRaises( ldap.CONNECT_ERROR
+                         , conn.search
+                         , 'dc=localhost'
+                         , '(cn=foo)'
+                         )
 
     def test_search_binaryattribute(self):
         # A binary value will remain untouched, no transformation 

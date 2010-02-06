@@ -18,10 +18,8 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import ErrorLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
-from dataflake.ldapconnection.tests.fakeldap import FakeLDAPConnection
 
 class ConnectionConnectTests(LDAPConnectionTests):
 
@@ -77,11 +75,9 @@ class ConnectionConnectTests(LDAPConnectionTests):
 
     def test_connect_ldaperror_raises(self):
         import ldap
-        of = ErrorLDAPObjectFactory('conn_string')
-        of.setException(ldap.SERVER_DOWN)
-        def factory(conn_string, who='', cred=''):
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory, conn_timeout=1)
+        conn, ldap_connection = self._makeRaising( 'start_tls_s'
+                                                 , ldap.SERVER_DOWN
+                                                 )
         self.assertRaises(ldap.SERVER_DOWN, conn.connect)
 
 

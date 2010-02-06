@@ -18,9 +18,9 @@ $Id$
 import unittest
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import DummyLDAPObjectFactory
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+
 
 class ConnectionModifyTests(LDAPConnectionTests):
 
@@ -98,11 +98,18 @@ class ConnectionModifyTests(LDAPConnectionTests):
         rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
         self.failIf(rec.get('a'))
 
-        # Tryng to modify the record by providing an empty non-existing key
+        # Tryng to modify the record by providing an empty or non-matching
         # should not result in more operations.
         conn.modify( 'cn=foo,dc=localhost'
                    , mod_type=ldap.MOD_DELETE
                    , attrs={'b':''}
+                   )
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['b'], ['b'])
+
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_DELETE
+                   , attrs={'b':'UNKNOWN'}
                    )
         rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
         self.assertEquals(rec['b'], ['b'])
@@ -158,25 +165,19 @@ class ConnectionModifyTests(LDAPConnectionTests):
         self.assertEquals(rec['cn'], ['bar'])
 
     def test_modify_referral(self):
-        of = DummyLDAPObjectFactory('conn_string')
-        of.res = [ ('dn', {'a':'a'}) ]
         import ldap
-        of.mod_exc = ( ldap.REFERRAL
-                     , {'info':'please go to ldap://otherhost:1389'}
-                     )
-        def factory(conn_string, who='', cred=''):
-            of.conn_string = conn_string
-            return of
-        conn = self._makeOne('host', 636, 'ldap', factory)
-        conn.modify('cn=foo', attrs={'a':'y'})
-        self.assertEqual(of.conn_string, 'ldap://otherhost:1389')
-        self.failUnless(of.modified)
-        self.assertEqual(of.modified_dn, 'cn=foo')
-        self.assertEqual(len(of.modifications), 1)
-        mode, key, values = of.modifications[0]
-        self.assertEqual(mode, ldap.MOD_REPLACE)
-        self.assertEqual(key, 'a')
-        self.assertEqual(values, ['y'])
+        exc_arg = {'info':'please go to ldap://otherhost:1389'}
+        conn, ldap_connection = self._makeRaising( 'modify_s'
+                                                 , ldap.REFERRAL
+                                                 , exc_arg
+                                                 )
+        conn.insert('dc=localhost', 'cn=foo')
+
+        conn.modify('cn=foo,dc=localhost', attrs={'a':'y'})
+        self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
+        dn, modlist = ldap_connection.args
+        self.assertEquals(dn, 'cn=foo,dc=localhost')
+        self.assertEquals(modlist, [(0, 'a', ['y'])])
 
     def test_modify_nonexisting_raises(self):
         conn = self._makeSimple()
