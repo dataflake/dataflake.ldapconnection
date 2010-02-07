@@ -433,8 +433,7 @@ class FakeLDAPConnection:
             if tree_pos.has_key(elem):
                 tree_pos = tree_pos[elem]
             else:
-                # The base does not exist, we cannot find any records
-                return []
+                raise ldap.NO_SUCH_OBJECT(elem)
 
         q = parse_query(query)
 
@@ -614,6 +613,9 @@ class FakeLDAPConnection:
 
     def result(self, msgid=ldap.RES_ANY, all=1, timeout=-1):
         return ('partial', [('partial result', {'dn': 'partial result'})])
+
+    def unbind(self):
+        pass
 
 
 class RaisingFakeLDAPConnection(FakeLDAPConnection):
