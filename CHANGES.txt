@@ -4,6 +4,24 @@ Change log
 1.0 (unreleased)
 ----------------
 
+- Bug: fakeldap.FakeLDAPConnection wildcard searches did not 
+  work correctly and returned too many matches.
+
+- Bug: Improve behavior matching of standard python-ldap and 
+  fakeldap by raising ldap.NO_SUCH_OBJECT where operations 
+  target non-existing entries.
+
+- Bug: Improve behavior matching of standard python-ldap and 
+  fakeldap by raising ldap.ALREADY_EXISTS where operations 
+  duplicate existing entries.
+
+- Bug: Added tests for all fakeldap.FakeLDAPConnection methods
+  and added tests for some other module classes and functions.
+
+- Refactoring: Removed the fakeldap.initialize and explode_dn 
+  functions. They were either not needed or needlessly 
+  duplicating existing python-ldap features.
+
 - Bug: python-ldap will no longer support the LDAP connection 
   class ldap.ldapobject.SmartLDAPObject with version 2.3.11.
   Replacing it with ReconnectLDAPObject.

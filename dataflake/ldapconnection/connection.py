@@ -145,8 +145,10 @@ class LDAPConnection(object):
 
             connection_cache.set(self.hash, conn)
 
-        last_bind = getattr(conn, '_last_bind', (None, ((),()), {}))
-        if last_bind[1][0] != bind_dn and last_bind[1][1] != bind_pwd:
+        last_bind = getattr(conn, '_last_bind', None)
+        if ( not last_bind or
+             ( last_bind[1][0] != bind_dn and 
+               last_bind[1][1] != bind_pwd ) ):
             conn.simple_bind_s(bind_dn, bind_pwd)
 
         return conn
@@ -169,7 +171,7 @@ class LDAPConnection(object):
 
         # Deny auto-chasing of referrals to be safe, we handle them instead
         try:
-            connection.set_option(ldap.OPT_REFERRALS, 0)
+            connection.set_option(ldap.OPT_REFERRALS, ldap.DEREF_NEVER)
         except ldap.LDAPError: # Cannot set referrals, so do nothing
             pass
 

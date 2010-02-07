@@ -16,11 +16,6 @@ $Id$
 """
 
 import base64
-try:
-    from hashlib import sha1 as sha_new
-except ImportError:
-    from sha import new as sha_new
-
 import unittest
 
 from dataflake.ldapconnection.connection import connection_cache
@@ -82,9 +77,42 @@ class LDAPConnectionTests(unittest.TestCase):
         record = fakeldap.addTreeItems(dn)
         for key, value in kw.items():
             if key.lower() == 'userpassword':
-                sha_digest = sha_new(value).digest()
+                sha_digest = fakeldap.sha_new(value).digest()
                 value = ['{SHA}%s' % base64.encodestring(sha_digest).strip()]
             elif isinstance(value, basestring):
                 value = [value]
             record[key] = value
+
+
+class FakeLDAPTests(unittest.TestCase):
+
+    def setUp(self):
+        from dataflake.ldapconnection.tests import fakeldap
+        fakeldap.addTreeItems('ou=users,dc=localhost')
+
+    def tearDown(self):
+        from dataflake.ldapconnection.tests import fakeldap
+        fakeldap.clearTree()
+
+    def _getTargetClass(self):
+        from dataflake.ldapconnection.tests.fakeldap import FakeLDAPConnection
+        return FakeLDAPConnection
+
+    def _makeOne(self, *args, **kw):
+        conn = self._getTargetClass()(*args, **kw)
+        return conn
+
+
+    def _addUser(self, name):
+        conn = self._makeOne()
+        user_dn = 'cn=%s,ou=users,dc=localhost' % name
+        user_pwd = '%s_secret' % name
+        sha_digest = fakeldap.sha_new(user_pwd).digest()
+        pwd = '{SHA}%s' % base64.encodestring(sha_digest).strip()
+        user = [ ('cn', [name])
+               , ('userPassword', [pwd])
+               , ('objectClass', ['top', 'person'])
+               ]
+        conn.add_s(user_dn, user)
+        return (user_dn, user_pwd)
 

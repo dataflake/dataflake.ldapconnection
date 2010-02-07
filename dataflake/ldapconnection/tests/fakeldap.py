@@ -22,6 +22,7 @@ try:
 except ImportError:
     from sha import new as sha_new
 import ldap
+from ldap.dn import explode_dn
 import re
 
 # From http://www.ietf.org/rfc/rfc2254.txt, Section 4
@@ -72,6 +73,22 @@ class Op(object):
         return "Op('%s')" % self.op
 
 class Filter(object):
+    """ A simple representation for search filter elements
+    
+    >>> fltr = Filter('cn', '=', 'joe')
+    >>> repr(fltr)
+    "Filter('cn', '=', 'joe')"
+    >>> fltr == Filter('cn', '=', 'joe')
+    True
+    >>> fltr == Filter('CN', '=', 'joe')
+    True
+    >>> fltr == Filter('cn', '=', 'Joe')
+    False
+    >>> filters = [Filter('CN', '=', 'Zack'), Filter('cn', '=', 'Fred')]
+    >>> filters.sort()
+    >>> filters
+    [Filter('cn', '=', 'Fred'), Filter('CN', '=', 'Zack')]
+    """
 
     def __init__(self, attr, comp, value):
         self.attr = attr
@@ -288,14 +305,6 @@ ANY = parse_query('(objectClass=*)')
 GROUP_OF_UNIQUE_NAMES = parse_query('(objectClass=groupOfUniqueNames)')
 
 
-def initialize(conn_str):
-    """ Initialize a new connection """
-    return FakeLDAPConnection()
-
-def explode_dn(dn, *ign, **ignored):
-    """ Get a DN's elements """
-    return [x.strip() for x in dn.split(',')]
-
 def clearTree():
     TREE.clear()
 
@@ -323,10 +332,14 @@ def apply_filter(tree_pos, base, fltr):
     if q_val.startswith('*') or q_val.endswith('*'):
         if q_val != '*':
             # Wildcard search
-            wildcard = True
-            if q_val.startswith('*'):
+            if q_val.startswith('*') and q_val.endswith('*'):
+                wildcard = 'both'
+                q_val = q_val[1:-1]
+            elif q_val.startswith('*'):
+                wildcard = 'start'
                 q_val = q_val[1:]
-            if q_val.endswith('*'):
+            elif q_val.endswith('*'):
+                wildcard = 'end'
                 q_val = q_val[:-1]
     # Need to find out if tree_pos is a leaf record, it needs different handling
     # Leaf records will appear when doing BASE-scoped searches.
@@ -345,9 +358,18 @@ def apply_filter(tree_pos, base, fltr):
             elif wildcard:
                 found = False
                 for x in val[q_key]:
-                    if x.find(q_val) != -1:
-                        found = True
-                        break
+                    if wildcard == 'start':
+                        if x.endswith(q_val):
+                            found = True
+                            break
+                    elif wildcard == 'end':
+                        if x.startswith(q_val):
+                            found = True
+                            break
+                    else:
+                        if q_val in x:
+                            found = True
+                            break
             elif not q_val in val[q_key]:
                 found = False
             if found:
@@ -356,14 +378,15 @@ def apply_filter(tree_pos, base, fltr):
 
 class FakeLDAPConnection:
 
-    start_tls_called = False
-
     def __init__(self, *args, **kw):
         self.args = args
         self.kwargs = kw
+        self.options = {}
+        self._last_bind = None
+        self.start_tls_called = False
 
     def set_option(self, option, value):
-        setattr(self, str(option), value)
+        self.options[option] = value
 
     def simple_bind_s(self, binduid, bindpwd):
         self._last_bind = (self.simple_bind_s, (binduid, bindpwd), {})
@@ -423,7 +446,6 @@ class FakeLDAPConnection:
             else:
                 return tree_pos.items()
 
-        res = []
         by_level = {}
         for idx, (operation, filters) in enumerate(explode_query(q)):
             lvl = by_level[idx] = []
@@ -477,7 +499,8 @@ class FakeLDAPConnection:
         if by_level:
             # Return the last one.
             return by_level[idx]
-        return res
+
+        return []
 
 
     def add_s(self, dn, attr_list):
@@ -494,15 +517,16 @@ class FakeLDAPConnection:
                 raise ldap.NO_SUCH_OBJECT(elem)
 
         if tree_pos.has_key(rdn):
-            raise ldap.ALREADY_EXISTS
-        else:
-            # Add rdn to attributes as well.
-            k, v = rdn.split('=')
-            tree_pos[rdn] = {k:[v]}
-            rec = tree_pos[rdn]
+            raise ldap.ALREADY_EXISTS(rdn)
 
-            for key, val in attr_list:
-                rec[key] = val
+        # Add rdn to attributes as well.
+        k, v = rdn.split('=')
+        tree_pos[rdn] = {k:[v]}
+        rec = tree_pos[rdn]
+
+        for key, val in attr_list:
+            rec[key] = val
+
 
     def delete_s(self, dn):
         elems = explode_dn(dn)
@@ -514,9 +538,13 @@ class FakeLDAPConnection:
         for elem in base:
             if tree_pos.has_key(elem):
                 tree_pos = tree_pos[elem]
+            else:
+                raise ldap.NO_SUCH_OBJECT(elem)
 
-        if tree_pos.has_key(rdn):
-            del tree_pos[rdn]
+        if not tree_pos.has_key(rdn):
+            raise ldap.NO_SUCH_OBJECT(rdn)
+
+        del tree_pos[rdn]
 
     def modify_s(self, dn, mod_list):
         elems = explode_dn(dn)
@@ -530,6 +558,9 @@ class FakeLDAPConnection:
                 tree_pos = tree_pos[elem]
             else:
                 raise ldap.NO_SUCH_OBJECT(elem)
+
+        if not tree_pos.has_key(rdn):
+            raise ldap.NO_SUCH_OBJECT(rdn)
 
         rec = copy.deepcopy(tree_pos.get(rdn))
 
@@ -564,6 +595,14 @@ class FakeLDAPConnection:
         for elem in base:
             if tree_pos.has_key(elem):
                 tree_pos = tree_pos[elem]
+            else:
+                raise ldap.NO_SUCH_OBJECT(elem)
+
+        if not tree_pos.has_key(rdn):
+            raise ldap.NO_SUCH_OBJECT(rdn)
+
+        if tree_pos.has_key(new_rdn):
+            raise ldap.ALREADY_EXISTS(new_rdn)
 
         rec = tree_pos.get(rdn)
 
@@ -590,7 +629,6 @@ class RaisingFakeLDAPConnection(FakeLDAPConnection):
                 raise exc_class(exc_arg)
             else:
                 raise exc_class
-            raise to_raise
         setattr(self, raise_on, func)
 
 

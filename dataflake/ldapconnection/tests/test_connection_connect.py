@@ -23,12 +23,18 @@ from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 
 class ConnectionConnectTests(LDAPConnectionTests):
 
-    def test_connect_initial_noargs(self):
+    def test_connect_initial_defaults(self):
+        import ldap
         conn = self._makeSimple()
         connection = conn.connect()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, u'')
         self.assertEqual(bindpwd, '')
+        self.failIf(getattr(connection, 'timeout', False))
+        self.assertEquals( connection.options.get(ldap.OPT_REFERRALS)
+                         , ldap.DEREF_NEVER
+                         )
+        self.failIf(connection.options.has_key(ldap.OPT_NETWORK_TIMEOUT))
         self.failIf(connection.start_tls_called)
 
     def test_connect_initial_bind_dn_not_None(self):
@@ -53,15 +59,16 @@ class ConnectionConnectTests(LDAPConnectionTests):
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, conn.bind_dn)
 
-    def test_connect_timeout_default(self):
-        conn = self._makeSimple()
-        connection = conn.connect()
-        self.failIf(getattr(connection, 'timeout', 0))
-
-    def test_connect_timeout_specified(self):
+    def test_connect_optimeout_specified(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, op_timeout=99)
         connection = conn.connect()
         self.assertEquals(connection.timeout, 99)
+
+    def test_connect_conntimeout_specified(self):
+        import ldap
+        conn = self._makeOne('host', 636, 'ldap', self._factory, conn_timeout=99)
+        connection = conn.connect()
+        self.assertEquals(connection.options.get(ldap.OPT_NETWORK_TIMEOUT), 99)
 
     def test_connect_ldap_starttls(self):
         conn = self._makeOne('host', 636, 'ldaptls', self._factory)
@@ -79,6 +86,12 @@ class ConnectionConnectTests(LDAPConnectionTests):
                                                  , ldap.SERVER_DOWN
                                                  )
         self.assertRaises(ldap.SERVER_DOWN, conn.connect)
+
+    def test_connect_cannot_set_referrals(self):
+        import ldap
+        conn, ldap_connection = self._makeRaising('set_option', ldap.LDAPError)
+        connection = conn.connect()
+        self.failIf(connection.options.has_key(ldap.OPT_REFERRALS))
 
 
 def test_suite():

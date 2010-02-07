@@ -24,19 +24,24 @@ from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 class ConnectionDeleteTests(LDAPConnectionTests):
 
     def test_delete_noauthentication(self):
+        self._addRecord('cn=foo,dc=localhost')
         conn = self._makeSimple()
-        conn.delete('cn=foo')
+        conn.delete('cn=foo,dc=localhost')
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, u'')
         self.assertEqual(bindpwd, '')
 
     def test_delete_authentication(self):
+        self._addRecord('cn=foo,dc=localhost')
         conn = self._makeSimple()
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
         self._addRecord(bind_dn_serverencoded, userPassword='foo')
-        conn.delete('cn=foo', bind_dn=bind_dn_apiencoded, bind_pwd='foo')
+        conn.delete( 'cn=foo,dc=localhost'
+                   , bind_dn=bind_dn_apiencoded
+                   , bind_pwd='foo'
+                   )
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, bind_dn_serverencoded)
@@ -58,6 +63,7 @@ class ConnectionDeleteTests(LDAPConnectionTests):
 
     def test_delete_referral(self):
         import ldap
+        self._addRecord('cn=foo,dc=localhost')
         exc_arg = {'info':'please go to ldap://otherhost:1389'}
         conn, ldap_connection = self._makeRaising( 'delete_s'
                                                  , ldap.REFERRAL

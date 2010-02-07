@@ -42,7 +42,7 @@ class ConnectionModifyTests(LDAPConnectionTests):
         conn.insert('dc=localhost', 'cn=foo')
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
-        self._addRecord(bind_dn_serverencoded, userPassword='foo')
+        self._addRecord(bind_dn_serverencoded, userPassword='foo', cn='foo')
         import ldap
         conn.modify( 'cn=foo,dc=localhost'
                    , mod_type=ldap.MOD_ADD
@@ -98,8 +98,8 @@ class ConnectionModifyTests(LDAPConnectionTests):
         rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
         self.failIf(rec.get('a'))
 
-        # Tryng to modify the record by providing an empty or non-matching
-        # should not result in more operations.
+        # Trying to modify the record by providing an empty or non-matching
+        # value should not result in any changes.
         conn.modify( 'cn=foo,dc=localhost'
                    , mod_type=ldap.MOD_DELETE
                    , attrs={'b':''}
@@ -107,9 +107,18 @@ class ConnectionModifyTests(LDAPConnectionTests):
         rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
         self.assertEquals(rec['b'], ['b'])
 
+        # Trying a deletion with non-matching key and value must fail
         conn.modify( 'cn=foo,dc=localhost'
                    , mod_type=ldap.MOD_DELETE
                    , attrs={'b':'UNKNOWN'}
+                   )
+        rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
+        self.assertEquals(rec['b'], ['b'])
+
+        # Trying a deletion with partial intersecting values fails as well
+        conn.modify( 'cn=foo,dc=localhost'
+                   , mod_type=ldap.MOD_DELETE
+                   , attrs={'b':['a','b']}
                    )
         rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
         self.assertEquals(rec['b'], ['b'])
