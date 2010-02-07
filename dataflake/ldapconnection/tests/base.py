@@ -57,7 +57,7 @@ class LDAPConnectionTests(unittest.TestCase):
     def _makeRaising(self, raise_on, exc_class, exc_arg=None):
         ldap_connection = fakeldap.RaisingFakeLDAPConnection('conn_string')
         ldap_connection.setExceptionAndMethod(raise_on, exc_class, exc_arg)
-        def factory(conn_string, who='', cred=''):
+        def factory(conn_string):
             ldap_connection.conn_string = conn_string
             return ldap_connection
         conn = self._makeOne('host', 389, 'ldaptls', factory)
@@ -67,14 +67,14 @@ class LDAPConnectionTests(unittest.TestCase):
     def _makeFixedResultConnection(self, results):
         ldap_connection = fakeldap.FixedResultFakeLDAPConnection()
         ldap_connection.search_results = results
-        def factory(conn_string, who='', cred=''):
+        def factory(conn_string):
             ldap_connection.conn_string = conn_string
             return ldap_connection
         conn = self._makeOne('host', 389, 'ldaptls', factory)
 
         return conn
 
-    def _factory(self, connection_string, who='', cred=''):
+    def _factory(self, connection_string):
         of = fakeldap.FakeLDAPConnection(connection_string)
         return of
 

@@ -124,8 +124,6 @@ class LDAPConnection(object):
             for server in self.servers.values():
                 try:
                     conn = self._connect( server['url']
-                                        , bind_dn
-                                        , bind_pwd
                                         , conn_timeout=server['conn_timeout']
                                         , op_timeout=server['op_timeout']
                                         )
@@ -160,8 +158,6 @@ class LDAPConnection(object):
 
     def _connect( self
                 , connection_string
-                , user_dn
-                , user_pwd
                 , conn_timeout=5
                 , op_timeout=-1
                 ):
@@ -169,7 +165,7 @@ class LDAPConnection(object):
 
         user_dn is assumed to have been encoded/escaped correctly
         """
-        connection = self.c_factory(connection_string,who=user_dn,cred=user_pwd)
+        connection = self.c_factory(connection_string)
 
         # Deny auto-chasing of referrals to be safe, we handle them instead
         try:
@@ -382,10 +378,9 @@ class LDAPConnection(object):
 
         if ldapurl.isLDAPUrl(ldap_url):
             conn_str = ldapurl.LDAPUrl(ldap_url).initializeUrl()
-            return self._connect( conn_str
-                                , self._encode_bind_dn()
-                                , self.bind_pwd
-                                )
+            conn = self._connect(conn_str)
+            conn.simple_bind_s(self._encode_bind_dn(), self.bind_pwd)
+            return conn
         else:
             raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
 
