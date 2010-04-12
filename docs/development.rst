@@ -24,7 +24,8 @@ Bug tracker
 -----------
 For bug reports, suggestions or questions please use the 
 dataflake bug tracker at 
-`http://www.dataflake.org/tracker <http://www.dataflake.org/tracker/>`_.
+`https://bugs.launchpad.net/dataflake.ldapconnection 
+<https://bugs.launchpad.net/dataflake.ldapconnection>`_.
 
 Setting up a development sandbox and testing
 --------------------------------------------

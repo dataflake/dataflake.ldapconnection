@@ -189,8 +189,9 @@ class ConnectionModifyTests(LDAPConnectionTests):
         self.assertEquals(modlist, [(0, 'a', ['y'])])
 
     def test_modify_nonexisting_raises(self):
+        import ldap
         conn = self._makeSimple()
-        self.assertRaises( RuntimeError
+        self.assertRaises( ldap.NO_SUCH_OBJECT
                          , conn.modify
                          , 'cn=UNKNOWN'
                          , attrs={'a':'y'}

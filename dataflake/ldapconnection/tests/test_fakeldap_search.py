@@ -157,10 +157,14 @@ class FakeLDAPSearchTests(FakeLDAPTests):
                          )
     
     def test_search_invalid_base(self):
+        import ldap
         conn = self._makeOne()
         self._addUser('foo')
-        self.failIf(conn.search_s('o=base', query='(objectClass=*)'))
-
+        self.assertRaises( ldap.NO_SUCH_OBJECT
+                         , conn.search_s
+                         , 'o=base'
+                         , query='(objectClass=*)'
+                         )
 
 
 def test_suite():

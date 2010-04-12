@@ -310,11 +310,6 @@ class LDAPConnection(object):
                          , bind_pwd=bind_pwd
                          )
         attrs = attrs and attrs or {}
-
-        if res['size'] == 0:
-            raise RuntimeError(
-                'LDAPConnection.modify: Cannot find dn "%s"' % dn)
-
         cur_rec = res['results'][0]
         mod_list = []
 

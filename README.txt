@@ -19,7 +19,8 @@ http://docs.dataflake.org/dataflake.ldapconnection.
 
 Bug tracker
 ===========
-A bug tracker is available at http://www.dataflake.org/tracker/
+A bug tracker is available at
+https://bugs.launchpad.net/dataflake.ldapconnection
 
 
 SVN version

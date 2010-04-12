@@ -25,7 +25,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
 
     def test_search_noauthentication(self):
         conn = self._makeSimple()
-        response = conn.search('o=base', 'scope')
+        response = conn.search('dc=localhost', 'scope')
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, u'')

@@ -107,18 +107,20 @@ class FakeLDAPModifyTests(FakeLDAPTests):
                            , query='(objectClass=*)'
                            )
         self.failUnless(foo)
-        bar = conn.search_s( 'cn=bar,ou=users,dc=localhost'
-                           , scope=ldap.SCOPE_BASE
-                           , query='(objectClass=*)'
-                           )
-        self.failIf(bar)
+        self.assertRaises( ldap.NO_SUCH_OBJECT
+                         , conn.search_s
+                         , 'cn=bar,ou=users,dc=localhost'
+                         , scope=ldap.SCOPE_BASE
+                         , query='(objectClass=*)'
+                         )
 
         conn.modrdn_s('cn=foo,ou=users,dc=localhost', 'cn=bar')
-        foo = conn.search_s( 'cn=foo,ou=users,dc=localhost'
-                           , scope=ldap.SCOPE_BASE
-                           , query='(objectClass=*)'
-                           )
-        self.failIf(foo)
+        self.assertRaises( ldap.NO_SUCH_OBJECT
+                         , conn.search_s
+                         , 'cn=foo,ou=users,dc=localhost'
+                         , scope=ldap.SCOPE_BASE
+                         , query='(objectClass=*)'
+                         )
         bar = conn.search_s( 'cn=bar,ou=users,dc=localhost'
                            , scope=ldap.SCOPE_BASE
                            , query='(objectClass=*)'
