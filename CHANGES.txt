@@ -3,6 +3,11 @@ Change log
 
 1.1 (unreleased)
 ----------------
+- Updated Sphinx Makefile and configuration to be closer
+  to the latest Sphinx version
+
+- Greatly expand installation and testing documentation using
+  ideas from Tres Seaver
 
 
 1.0 (2010-04-12)
