@@ -11,7 +11,7 @@
 #
 ##############################################################################
 
-__version__ = '1.1'
+__version__ = '1.2dev'
 
 import os
 
@@ -37,7 +37,7 @@ setup(name='dataflake.ldapconnection',
         "Programming Language :: Python :: 2.4",
         "Programming Language :: Python :: 2.5",
         "Programming Language :: Python :: 2.6",
-        "Topic :a Software Development :: Libraries :: Python Modules",
+        "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
         ],
       keywords='ldap ldapv3',

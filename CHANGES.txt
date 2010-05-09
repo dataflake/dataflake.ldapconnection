@@ -1,6 +1,10 @@
 Change log
 ==========
 
+1.2 (unreleased)
+----------------
+
+
 1.1 (2010-05-09)
 ----------------
 - Updated Sphinx Makefile and configuration to be closer
