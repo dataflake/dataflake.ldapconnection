@@ -3,6 +3,7 @@ Change log
 
 1.2 (unreleased)
 ----------------
+- Using ``id()`` is not random enough for a unique hash.
 
 
 1.1 (2010-05-09)

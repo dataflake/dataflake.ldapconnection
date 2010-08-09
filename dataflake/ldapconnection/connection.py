@@ -27,6 +27,7 @@ from ldap.filter import filter_format
 from ldap.ldapobject import ReconnectLDAPObject
 import ldapurl
 import logging
+from random import random
 
 from zope.interface import implements
 
@@ -66,7 +67,7 @@ class LDAPConnection(object):
         self.read_only = read_only
         self.c_factory = c_factory
         self._logger = logger
-        self.hash = id(self)
+        self.hash = id(self) + random()
 
         self.servers = {}
         if host:
