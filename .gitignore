@@ -1,0 +1,13 @@
+
+# /
+/*.egg-info
+/*.egg
+/dist
+/develop-eggs
+/bin
+/parts
+/.installed.cfg
+/.coverage
+
+# /docs/
+/docs/_build
