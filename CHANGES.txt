@@ -3,6 +3,7 @@ Change log
 
 1.3 (unreleased)
 ----------------
+- switched documentation to point to the new Git repository
 
 
 1.2 (2010-08-09)
