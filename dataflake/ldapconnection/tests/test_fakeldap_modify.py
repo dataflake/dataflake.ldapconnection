@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_fakeldap_modify: Tests for the FakeLDAP modify_s and modrdn_s methods
-
-$Id$
 """
 
 import unittest

@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_fakeldap_memberof: Tests for FakeLDAP memberof "overlay"
-
-$Id$
 """
 
 import unittest

@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ dataflake.ldapconnnection interfaces
-
-$Id$
 """
 
 from zope.interface import Interface

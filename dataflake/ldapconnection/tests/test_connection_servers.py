@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection: Tests for the LDAPConnection class
-
-$Id$
 """
 
 import ldapurl

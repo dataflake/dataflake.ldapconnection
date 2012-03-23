@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection_basic: Basic tests for the LDAPConnection class
-
-$Id$
 """
 
 import unittest

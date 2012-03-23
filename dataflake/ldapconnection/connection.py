@@ -14,8 +14,6 @@
 
 Instances of this class offer a simplified API to do searches, insertions, 
 deletions or modifications.
-
-$Id$
 """
 
 import codecs

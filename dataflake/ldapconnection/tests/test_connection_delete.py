@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection_delete: Tests for the LDAPConnection delete method
-
-$Id$
 """
 
 import unittest

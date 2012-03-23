@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_fakeldap_bind: Tests for the FakeLDAP simple_bind_s method
-
-$Id$
 """
 
 import doctest

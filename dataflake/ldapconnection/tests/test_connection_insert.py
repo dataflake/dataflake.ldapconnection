@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection_insert: Tests for the LDAPConnection insert method
-
-$Id$
 """
 
 import unittest

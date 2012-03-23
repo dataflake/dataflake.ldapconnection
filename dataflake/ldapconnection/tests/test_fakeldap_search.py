@@ -12,8 +12,6 @@
 #
 ##############################################################################
 """ test_fakeldap_search: Tests for the FakeLDAP search_s method
-
-$Id$
 """
 
 import doctest

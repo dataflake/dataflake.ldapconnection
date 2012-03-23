@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_utils: Tests for the utils utility functions
-
-$Id$
 """
 
 import unittest

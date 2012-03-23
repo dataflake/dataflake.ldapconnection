@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection_modify: Tests for the LDAPConnection modify method
-
-$Id$
 """
 
 import unittest

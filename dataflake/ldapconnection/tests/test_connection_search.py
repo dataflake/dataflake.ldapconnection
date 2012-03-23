@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection_search: Tests for the LDAPConnection search method
-
-$Id$
 """
 
 import unittest

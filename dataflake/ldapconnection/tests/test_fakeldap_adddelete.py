@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_fakeldap_addelete: Tests for the FakeLDAP add_s and delete_s methods
-
-$Id$
 """
 
 import unittest

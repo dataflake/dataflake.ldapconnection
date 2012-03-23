@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ dummy: dummy test fixtures
-
-$Id$
 """
 
 ISO_8859_1_UNICODE = u'\xe4\xf6\xfc\xdf' # Umlauts a, o, u, sharp s

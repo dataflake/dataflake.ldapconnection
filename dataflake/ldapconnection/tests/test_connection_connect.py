@@ -11,8 +11,6 @@
 #
 ##############################################################################
 """ test_connection_connect: Tests for the LDAPConnection connect method
-
-$Id$
 """
 
 import unittest

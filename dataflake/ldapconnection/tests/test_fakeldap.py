@@ -12,8 +12,6 @@
 #
 ##############################################################################
 """ test_fakeldap: Tests for the FakeLDAP testing fixture
-
-$Id$
 """
 
 import doctest
