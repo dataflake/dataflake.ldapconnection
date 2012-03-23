@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ##############################################################################
 #
 # Copyright (c) 2008-2010 Jens Vagelpohl and Contributors. All Rights Reserved.
@@ -165,6 +166,72 @@ class FakeLDAPSearchTests(FakeLDAPTests):
                          , 'o=base'
                          , query='(objectClass=*)'
                          )
+
+    def test_search_by_mail(self):
+        conn = self._makeOne()
+        self._addUser('foo', mail='foo@foo.com')
+        self._addUser('bar', mail='bar@bar.com')
+        self._addUser('baz', mail='baz@baz.com')
+
+        res = conn.search_s( 'ou=users,dc=localhost'
+                           , query='(|(mail=foo@foo.com)(mail=bar@bar.com))'
+                           )
+        dn_values = [dn for (dn, attr_dict) in res]
+        self.assertEquals(len(dn_values), 2)
+        self.assertEquals( set(dn_values)
+                         , set( [ 'cn=foo,ou=users,dc=localhost'
+                                , 'cn=bar,ou=users,dc=localhost'
+                                ] )
+                         )
+
+    def test_search_by_utf8(self):
+        conn = self._makeOne()
+        self._addUser('føø')
+        self._addUser('bår')
+        self._addUser('baz')
+
+        res = conn.search_s( 'ou=users,dc=localhost'
+                           , query='(|(cn=føø)(cn=bår))'
+                           )
+        dn_values = [dn for (dn, attr_dict) in res]
+        self.assertEquals(len(dn_values), 2)
+        self.assertEquals( set(dn_values)
+                         , set( [ 'cn=føø,ou=users,dc=localhost'
+                                , 'cn=bår,ou=users,dc=localhost'
+                                ] )
+                         )
+
+    def test_return_all_attributes(self):
+        conn = self._makeOne()
+        self._addUser('foo', mail='foo@foo.com')
+
+        res = conn.search_s( 'ou=users,dc=localhost'
+                           , query='(cn=foo)'
+                           , attrs=None
+                           )
+        self.assertEquals(len(res), 1)
+        dn, attr_dict = res[0]
+        self.assertEquals(dn, 'cn=foo,ou=users,dc=localhost')
+        self.assertTrue('cn' in attr_dict)
+        self.assertTrue('mail' in attr_dict)
+        self.assertTrue('userPassword' in attr_dict)
+        self.assertTrue('objectClass' in attr_dict)
+
+    def test_return_filtered_attributes(self):
+        conn = self._makeOne()
+        self._addUser('foo', mail='foo@foo.com')
+
+        res = conn.search_s( 'ou=users,dc=localhost'
+                           , query='(cn=foo)'
+                           , attrs=['cn', 'mail']
+                           )
+        self.assertEquals(len(res), 1)
+        dn, attr_dict = res[0]
+        self.assertEquals(dn, 'cn=foo,ou=users,dc=localhost')
+        self.assertTrue('cn' in attr_dict)
+        self.assertTrue('mail' in attr_dict)
+        self.assertFalse('userPassword' in attr_dict)
+        self.assertFalse('objectClass' in attr_dict)
 
 
 def test_suite():

@@ -76,6 +76,10 @@ class ILDAPConnection(Interface):
         thrown by the last attempted connection is re-raised.
         """
 
+    def disconnect():
+        """ Close the current LDAP server connection
+        """
+
     def search( base
               , scope=2
               , fltr='(objectClass=*)'
@@ -83,6 +87,7 @@ class ILDAPConnection(Interface):
               , convert_filter=True
               , bind_dn=None
               , bind_pwd=None
+              , raw=False
               ):
         """ Perform a LDAP search
 
@@ -93,7 +98,7 @@ class ILDAPConnection(Interface):
         What to search for is described by the `filter` argument, which 
         must be a valid LDAP search filter string. If only certain record 
         attributes should be returned, they can be specified in the `attrs` 
-        sequence.
+        sequence. If `raw` is true, results are returned in the ldap_encoding.
 
         If the search raised no errors, a mapping with the following keys
         is returned:

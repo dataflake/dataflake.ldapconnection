@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ##############################################################################
 #
 # Copyright (c) 2000-2009 Jens Vagelpohl and Contributors. All Rights Reserved.
@@ -16,7 +17,7 @@ $Id: FakeLDAP.py 1485 2008-06-04 16:08:38Z jens $
 """
 
 import base64
-import copy
+from copy import deepcopy
 try:
     from hashlib import sha1 as sha_new
 except ImportError:
@@ -55,7 +56,7 @@ import re
 _FLTR = r'\(\w*?=[\*\w\s=,\\]*?\)'
 _OP = '[&\|\!]{1}'
 
-FLTR = r'\((?P<attr>\w*?)(?P<comp>=)(?P<value>[\*\w\s=,\\\']*?)\)'
+FLTR = r'\((?P<attr>\w*?)(?P<comp>=)(?P<value>[\*\w\s=,\\\'@\-\+_\.øØæÆåÅäÄöÖüÜß]*?)\)'
 FLTR_RE = re.compile(FLTR + '(?P<fltr>.*)')
 
 OP = '\((?P<op>(%s))(?P<fltr>(%s)*)\)' % (_OP, _FLTR)
@@ -376,7 +377,24 @@ def apply_filter(tree_pos, base, fltr):
                 res.append(('%s,%s' % (key, base), val))
     return res
 
+def filter_attrs(entry, attrs):
+    if not attrs:
+        return entry
+    return dict((k, v) for k, v in entry.items() if k in attrs)
+
+def hash_pwd(string):
+    if isinstance(string, unicode):
+        string = string.encode('utf-8')
+    sha_digest = sha_new(string).digest()
+    return '{SHA}%s' % base64.encodestring(sha_digest).strip()
+
+
 class FakeLDAPConnection:
+
+    hash_password = True
+    maintain_memberof = False
+    member_attr = 'member'
+    memberof_attr = 'memberOf'
 
     def __init__(self, *args, **kw):
         self.args = args
@@ -391,17 +409,18 @@ class FakeLDAPConnection:
     def simple_bind_s(self, binduid, bindpwd):
         self._last_bind = (self.simple_bind_s, (binduid, bindpwd), {})
 
-        if binduid.find('Manager') != -1:
+        if 'Manager' in binduid:
             return 1
 
         if bindpwd == '':
             # Emulate LDAP mis-behavior
             return 1
 
-        sha_obj = sha_new(bindpwd)
-        sha_dig = sha_obj.digest()
-        enc_bindpwd = '{SHA}%s' % base64.encodestring(sha_dig)
-        enc_bindpwd = enc_bindpwd.strip()
+        if self.hash_password:
+            enc_bindpwd = hash_pwd(bindpwd)
+        else:
+            enc_bindpwd = bindpwd
+
         rec = self.search_s(binduid)
         rec_pwd = ''
         for key, val_list in rec:
@@ -441,9 +460,9 @@ class FakeLDAPConnection:
             # Return all objects, no matter what class
             if scope == ldap.SCOPE_BASE and tree_pos_dn == base:
                 # Only if dn matches 'base'
-                return (([base, tree_pos],))
+                return [(base, deepcopy(filter_attrs(tree_pos, attrs)))]
             else:
-                return tree_pos.items()
+                return [(k, deepcopy(filter_attrs(v, attrs))) for k, v in tree_pos.items()]
 
         by_level = {}
         for idx, (operation, filters) in enumerate(explode_query(q)):
@@ -497,10 +516,9 @@ class FakeLDAPConnection:
                         lvl[:] = new_lvl
         if by_level:
             # Return the last one.
-            return by_level[idx]
+            return [(k, deepcopy(filter_attrs(v, attrs))) for k, v in by_level[idx]]
 
         return []
-
 
     def add_s(self, dn, attr_list):
         elems = explode_dn(dn)
@@ -526,6 +544,11 @@ class FakeLDAPConnection:
         for key, val in attr_list:
             rec[key] = val
 
+            # Maintain memberOf
+            if self.maintain_memberof:
+                if key == self.member_attr:
+                    for v in val:
+                        self.modify_s(v, [(ldap.MOD_ADD, self.memberof_attr, [dn])])
 
     def delete_s(self, dn):
         elems = explode_dn(dn)
@@ -542,6 +565,16 @@ class FakeLDAPConnection:
 
         if not tree_pos.has_key(rdn):
             raise ldap.NO_SUCH_OBJECT(rdn)
+
+        # Maintain memberOf
+        if self.maintain_memberof:
+            rec = tree_pos[rdn]
+            if self.member_attr in rec:
+                for v in rec[self.member_attr]:
+                    self.modify_s(v, [(ldap.MOD_DELETE, self.memberof_attr, [dn])])
+            if self.memberof_attr in rec:
+                for v in rec[self.memberof_attr]:
+                    self.modify_s(v, [(ldap.MOD_DELETE, self.member_attr, [dn])])
 
         del tree_pos[rdn]
 
@@ -561,7 +594,7 @@ class FakeLDAPConnection:
         if not tree_pos.has_key(rdn):
             raise ldap.NO_SUCH_OBJECT(rdn)
 
-        rec = copy.deepcopy(tree_pos.get(rdn))
+        rec = deepcopy(tree_pos.get(rdn))
 
         for mod in mod_list:
             if mod[0] == ldap.MOD_REPLACE:
@@ -583,6 +616,17 @@ class FakeLDAPConnection:
                         rec[mod[1]] = cur_vals
 
         tree_pos[rdn] = rec
+
+        # Maintain memberOf
+        if self.maintain_memberof:
+            for mod in mod_list:
+                if mod[1] == self.member_attr:
+                    if mod[0] == ldap.MOD_ADD:
+                        for v in mod[2]:
+                            self.modify_s(v, [(ldap.MOD_ADD, self.memberof_attr, [dn])])
+                    elif mod[0] == ldap.MOD_DELETE:
+                        for v in mod[2]:
+                            self.modify_s(v, [(ldap.MOD_DELETE, self.memberof_attr, [dn])])
 
     def modrdn_s(self, dn, new_rdn, *ign):
         elems = explode_dn(dn)
@@ -615,7 +659,10 @@ class FakeLDAPConnection:
         return ('partial', [('partial result', {'dn': 'partial result'})])
 
     def unbind(self):
-        pass
+        self.unbind_s()
+
+    def unbind_s(self):
+        self._last_bind = None
 
 
 class RaisingFakeLDAPConnection(FakeLDAPConnection):
