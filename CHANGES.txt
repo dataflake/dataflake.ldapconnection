@@ -1,7 +1,7 @@
 Change log
 ==========
 
-1.3 (unreleased)
+1.3 (2012-03-23)
 ----------------
 - Update bootstrap.py to what ships with zc.buildout 1.5.2
 
