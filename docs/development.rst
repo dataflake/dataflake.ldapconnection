@@ -267,7 +267,7 @@ PyPI and upload the Sphinx documentation to PyPI:
   $ bin/buildout -o
   $ bin/docbuilder.sh
   $ bin/pdfbuilder.sh
-  $ bin/buildout setup setup.py sdist register upload upload_sphinx \
+  $ bin/docpy setup.py sdist register upload upload_sphinx \
         --upload-dir=docs/_build/html
 
 The ``bin/buildout`` step will make sure the correct package information 
