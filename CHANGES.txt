@@ -3,6 +3,11 @@ Change log
 
 1.4dev (unreleased)
 -------------------
+- Extended ``fakeldap.RaisingFakeLDAPConnection`` to accept a list
+  of exceptions to raise. On each call to the method that is set 
+  to raise the exception, the first item in the exception list 
+  is removed and raised. This allows testing code areas nested in 
+  more than one ``try/except`` clause.
 
 
 1.3 (2012-03-23)

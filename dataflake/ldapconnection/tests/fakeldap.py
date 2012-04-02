@@ -666,12 +666,21 @@ class FakeLDAPConnection:
 class RaisingFakeLDAPConnection(FakeLDAPConnection):
 
     def setExceptionAndMethod(self, raise_on, exc_class, exc_arg=None):
+        if isinstance(exc_class, (list, tuple)):
+            self.exception_list = list(exc_class)
+            self.exception_list.reverse()
+        else:
+            self.exception_list = [exc_class]
+
         hideaway = '%s_old' % raise_on
         setattr(self, hideaway, getattr(self, raise_on))
         def func(*args, **kw):
-            setattr(self, raise_on, getattr(self, hideaway))
+            if len(self.exception_list) <= 1:
+                setattr(self, raise_on, getattr(self, hideaway))
             setattr(self, 'args', args)
             setattr(self, 'kwargs', kw)
+
+            exc_class = self.exception_list.pop()
             if exc_arg:
                 raise exc_class(exc_arg)
             else:

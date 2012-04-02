@@ -111,6 +111,21 @@ class ConnectionSearchTests(LDAPConnectionTests):
         response = conn.search('dc=localhost', '(cn=foo)')
         self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
 
+    def test_search_referral_and_partial_results(self):
+        import ldap
+        exc_arg = {'info':'please go to ldap://otherhost:1389'}
+        exceptions = (ldap.REFERRAL, ldap.PARTIAL_RESULTS)
+        conn, ldap_connection = self._makeRaising( 'search_s'
+                                                 , exceptions
+                                                 , exc_arg
+                                                 )
+        response = conn.search('dc=localhost', '(cn=foo)')
+        self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
+        self.assertEqual(response['size'], 1)
+        results = response['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], {'dn': 'partial result'})
+
     def test_search_bad_referral(self):
         import ldap
         exc_arg = {'info':'please go to BAD_URL'}
