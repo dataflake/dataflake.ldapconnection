@@ -58,5 +58,13 @@ setup(name='dataflake.ldapconnection',
               'dataflake.cache',
               ],
       test_suite='dataflake.ldapconnection.tests',
+      extras_require={ 'docs': [ 'sphinx'
+                               , 'repoze.sphinx.autointerface'
+                               , 'pkginfo'
+                               , 'sphinx-pypi-upload'
+                               , 'zc.rst2'
+                               ]
+                     , 'testing': ['nose', 'coverage']
+                     },
       )
 

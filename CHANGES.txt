@@ -3,6 +3,13 @@ Change log
 
 1.4 (unreleased)
 ----------------
+- Moved the documentation build dependencies into a setup extra so 
+  building them without buildout becomes easier.
+
+- Added setup.py aliases for creating a testing sandbox and the 
+  documentation dependencies, and use them in the buildout 
+  configuration.
+
 - Extended ``fakeldap.RaisingFakeLDAPConnection`` to accept a list
   of exceptions to raise. On each call to the method that is set 
   to raise the exception, the first item in the exception list 
