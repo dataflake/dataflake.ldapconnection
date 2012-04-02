@@ -1,8 +1,8 @@
 Change log
 ==========
 
-1.4dev (unreleased)
--------------------
+1.4 (unreleased)
+----------------
 - Extended ``fakeldap.RaisingFakeLDAPConnection`` to accept a list
   of exceptions to raise. On each call to the method that is set 
   to raise the exception, the first item in the exception list 
