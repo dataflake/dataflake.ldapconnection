@@ -3,6 +3,10 @@ Change log
 
 1.4 (unreleased)
 ----------------
+- Added a simple tox configuration to quickly test with different 
+  Python versions. As a result of successful testing, re-declare 
+  compatibility with Python 2.4 and 2.5.
+
 - Moved the documentation build dependencies into a setup extra so 
   building them without buildout becomes easier.
 
