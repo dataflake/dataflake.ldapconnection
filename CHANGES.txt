@@ -1,7 +1,7 @@
 Change log
 ==========
 
-1.4 (unreleased)
+1.4 (2012-04-03)
 ----------------
 - Added a simple tox configuration to quickly test with different 
   Python versions. As a result of successful testing, re-declare 
