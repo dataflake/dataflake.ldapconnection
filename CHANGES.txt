@@ -1,6 +1,10 @@
 Change log
 ==========
 
+1.6 (unreleased)
+----------------
+
+
 1.5 (2012-04-20)
 ----------------
 - Factored the ``dataflake.ldapconnection.tests.fakeldap`` module
