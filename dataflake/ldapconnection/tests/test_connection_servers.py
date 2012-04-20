@@ -108,8 +108,3 @@ class ConnectionServerTests(LDAPConnectionTests):
         self.assertEqual(server['conn_timeout'], -1)
         self.assertEqual(server['op_timeout'], -1)
 
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
-

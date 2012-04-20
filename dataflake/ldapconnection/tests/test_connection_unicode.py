@@ -16,6 +16,8 @@
 
 import unittest
 
+from dataflake.fakeldap.utils import hash_pwd
+
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 
 
@@ -181,11 +183,10 @@ class UnicodeSupportTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 0)
 
     def test_bind_with_valid_unicode_credentials(self):
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
         conn.api_encoding = None
 
-        attrs = {'userPassword': fakeldap.hash_pwd('secret')}
+        attrs = {'userPassword': hash_pwd('secret')}
         conn.insert(u'dc=localhost', u'cn=føø', attrs=attrs)
 
         response = conn.search( u'dc=localhost'
@@ -197,11 +198,10 @@ class UnicodeSupportTests(LDAPConnectionTests):
 
     def test_bind_with_invalid_unicode_credentials(self):
         import ldap
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
         conn.api_encoding = None
 
-        attrs = {'userPassword': fakeldap.hash_pwd('secret')}
+        attrs = {'userPassword': hash_pwd('secret')}
         conn.insert(u'dc=localhost', u'cn=føø', attrs=attrs)
 
         self.assertRaises( ldap.INVALID_CREDENTIALS
@@ -213,11 +213,10 @@ class UnicodeSupportTests(LDAPConnectionTests):
                          )
 
     def test_bind_with_valid_unicode_credentials_from_connection(self):
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
         conn.api_encoding = None
 
-        attrs = {'userPassword': fakeldap.hash_pwd('secret')}
+        attrs = {'userPassword': hash_pwd('secret')}
         conn.insert(u'dc=localhost', u'cn=føø', attrs=attrs)
 
         conn.bind_dn = u'cn=føø,dc=localhost'
@@ -229,11 +228,10 @@ class UnicodeSupportTests(LDAPConnectionTests):
 
     def test_bind_with_invalid_unicode_credentials_from_connection(self):
         import ldap
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
         conn.api_encoding = None
 
-        attrs = {'userPassword': fakeldap.hash_pwd('secret')}
+        attrs = {'userPassword': hash_pwd('secret')}
         conn.insert(u'dc=localhost', u'cn=føø', attrs=attrs)
 
         conn.bind_dn = u'cn=føø,dc=localhost'
@@ -243,9 +241,4 @@ class UnicodeSupportTests(LDAPConnectionTests):
                          , u'dc=localhost'
                          , fltr=u'(cn=føø)'
                          )
-
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
 

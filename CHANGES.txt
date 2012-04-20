@@ -3,6 +3,12 @@ Change log
 
 1.5 (unreleased)
 ----------------
+- Factored the ``dataflake.ldapconnection.tests.fakeldap`` module
+  into a separate package ``dataflake.fakeldap``
+
+- Restricted the supported Python versions to 2.6 and 2.7.
+
+- removed old test_suite fossils
 
 
 1.4 (2012-04-03)

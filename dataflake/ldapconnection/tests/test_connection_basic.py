@@ -22,7 +22,8 @@ from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
 from dataflake.ldapconnection.tests.dummy import ISO_8859_7_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UNICODE
 from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UTF8
-from dataflake.ldapconnection.tests.fakeldap import FakeLDAPConnection
+from dataflake.fakeldap import FakeLDAPConnection
+
 
 class ConnectionBasicTests(LDAPConnectionTests):
 
@@ -132,8 +133,4 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.assertEquals( conn._encode_outgoing(ISO_8859_7_UTF8)
                          , ISO_8859_7_ENCODED
                          )
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
 

@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2008-2009 Jens Vagelpohl and Contributors. All Rights Reserved.
+# Copyright (c) 2008-2012 Jens Vagelpohl and Contributors. All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
 # Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
@@ -33,8 +33,6 @@ setup(name='dataflake.ldapconnection',
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Zope Public License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.4",
-        "Programming Language :: Python :: 2.5",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: Implementation :: CPython",
@@ -54,12 +52,14 @@ setup(name='dataflake.ldapconnection',
       tests_require = [
               'python-ldap>=2.3.0',
               'dataflake.cache',
+              'dataflake.fakeldap',
               ],
       install_requires=[
               'setuptools',
               'python-ldap>=2.3.0',
               'zope.interface',
               'dataflake.cache',
+              'dataflake.fakeldap',
               ],
       test_suite='dataflake.ldapconnection.tests',
       extras_require={ 'docs': [ 'sphinx'

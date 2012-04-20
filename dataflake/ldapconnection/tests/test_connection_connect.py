@@ -15,9 +15,12 @@
 
 import unittest
 
+from dataflake.fakeldap.utils import hash_pwd
+
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+
 
 class ConnectionConnectTests(LDAPConnectionTests):
 
@@ -93,10 +96,9 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.failIf(connection.options.has_key(ldap.OPT_REFERRALS))
 
     def test_disconnect_clears_connection_cache(self):
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
 
-        attrs = {'userPassword': fakeldap.hash_pwd('pass')}
+        attrs = {'userPassword': hash_pwd('pass')}
         conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
 
         response = conn.search( 'dc=localhost'
@@ -114,10 +116,9 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.assertEquals(conn._getConnection(), None)
 
     def test_disconnect_unbinds_connection(self):
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
 
-        attrs = {'userPassword': fakeldap.hash_pwd('pass')}
+        attrs = {'userPassword': hash_pwd('pass')}
         conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
 
         response = conn.search( 'dc=localhost'
@@ -135,10 +136,9 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.assertEquals(connection._last_bind, None)
 
     def test_rebind_with_same_password(self):
-        from dataflake.ldapconnection.tests import fakeldap
         conn = self._makeSimple()
 
-        attrs = {'userPassword': fakeldap.hash_pwd('pass')}
+        attrs = {'userPassword': hash_pwd('pass')}
         conn.insert( 'dc=localhost'
                    , 'cn=foo'
                    , attrs=attrs
@@ -155,9 +155,4 @@ class ConnectionConnectTests(LDAPConnectionTests):
                    )
         connection = conn._getConnection()
         self.assertEqual(connection._last_bind[1], ('cn=foo,dc=localhost', 'pass'))
-
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
 

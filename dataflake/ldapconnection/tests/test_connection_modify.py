@@ -204,8 +204,3 @@ class ConnectionModifyTests(LDAPConnectionTests):
                          , attrs={'a':'y'}
                          )
 
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
-

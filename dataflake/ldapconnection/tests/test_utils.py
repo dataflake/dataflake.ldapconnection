@@ -27,8 +27,3 @@ class UtilsTest(unittest.TestCase):
 
         self.assertEquals(escape_dn(None), None)
 
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
-

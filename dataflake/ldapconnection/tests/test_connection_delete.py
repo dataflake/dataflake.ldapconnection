@@ -72,8 +72,3 @@ class ConnectionDeleteTests(LDAPConnectionTests):
         self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
         self.assertEquals(ldap_connection.args, ('cn=foo,dc=localhost',))
 
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
-

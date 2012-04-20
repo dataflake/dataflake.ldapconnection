@@ -91,8 +91,3 @@ class ConnectionInsertTests(LDAPConnectionTests):
         record = results['results'][0]
         self.assertEquals(record['objectguid'], u'a')
 
-
-def test_suite():
-    import sys
-    return unittest.findTestCases(sys.modules[__name__])
-

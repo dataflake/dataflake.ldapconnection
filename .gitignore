@@ -9,6 +9,9 @@
 /.installed.cfg
 /.coverage
 /.tox
+coverage.xml
+nosetests.xml
+*.class
 
 # /docs/
 /docs/_build
