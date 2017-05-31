@@ -14,20 +14,23 @@
 __version__ = '1.6dev'
 
 import os
+from setuptools import find_packages
+from setuptools import setup
 
-from setuptools import setup, find_packages
+
+NAME = 'dataflake.ldapconnection'
+_boundary = '\n' + ('-' * 60) + '\n\n'
+_dl = 'Download\n========'
+
 
 def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
-_boundary = '\n' + ('-' * 60) + '\n\n'
 
-setup(name='dataflake.ldapconnection',
+setup(name=NAME,
       version=__version__,
       description='LDAP connection library',
-      long_description=( read('README.txt') 
-                       + "\n\nDownload\n========"
-                       ),
+      long_description=(read('README.txt') + _boundary + _dl),
       classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
@@ -42,32 +45,28 @@ setup(name='dataflake.ldapconnection',
       keywords='ldap ldapv3',
       author="Agendaless Consulting and Jens Vagelpohl",
       author_email="jens@dataflake.org",
-      url="http://pypi.python.org/pypi/dataflake.ldapconnection",
+      url="http://pypi.python.org/pypi/%s" % NAME,
       license="ZPL 2.1",
       packages=find_packages(),
       include_package_data=True,
       namespace_packages=['dataflake'],
       zip_safe=False,
       tests_require = [
-              'python-ldap>=2.3.0',
-              'dataflake.cache',
-              'dataflake.fakeldap',
-              ],
+        'python-ldap>=2.3.0',
+        'dataflake.cache',
+        'dataflake.fakeldap',
+        ],
       install_requires=[
-              'setuptools',
-              'python-ldap>=2.3.0',
-              'zope.interface',
-              'dataflake.cache',
-              'dataflake.fakeldap',
-              ],
-      test_suite='dataflake.ldapconnection.tests',
-      extras_require={ 'docs': [ 'sphinx'
-                               , 'repoze.sphinx.autointerface'
-                               , 'pkginfo'
-                               , 'sphinx-pypi-upload'
-                               , 'zc.rst2'
-                               ]
-                     , 'testing': ['nose', 'coverage']
-                     },
+        'setuptools',
+        'python-ldap>=2.3.0',
+        'zope.interface',
+        'dataflake.cache',
+        'dataflake.fakeldap',
+        ],
+      test_suite='%s.tests' % NAME,
+      extras_require={ 
+        'docs': ['sphinx', 'repoze.sphinx.autointerface',
+                 'pkginfo', 'sphinx-pypi-upload', 'zc.rst2'],
+        'testing': ['nose', 'coverage'],
+        },
       )
-
