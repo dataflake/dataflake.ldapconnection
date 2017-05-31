@@ -13,8 +13,6 @@
 """ test_connection_connect: Tests for the LDAPConnection connect method
 """
 
-import unittest
-
 from dataflake.fakeldap.utils import hash_pwd
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
@@ -32,12 +30,11 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.assertTrue(isinstance(binduid, str))
         self.assertEqual(binduid, '')
         self.assertEqual(bindpwd, '')
-        self.failIf(getattr(connection, 'timeout', False))
-        self.assertEquals( connection.options.get(ldap.OPT_REFERRALS)
-                         , ldap.DEREF_NEVER
-                         )
-        self.failIf(connection.options.has_key(ldap.OPT_NETWORK_TIMEOUT))
-        self.failIf(connection.start_tls_called)
+        self.assertFalse(getattr(connection, 'timeout', False))
+        self.assertEqual(connection.options.get(ldap.OPT_REFERRALS),
+                         ldap.DEREF_NEVER)
+        self.assertFalse(ldap.OPT_NETWORK_TIMEOUT in connection.options)
+        self.assertFalse(connection.start_tls_called)
 
     def test_connect_initial_bind_dn_not_None(self):
         conn = self._makeSimple()
@@ -64,13 +61,14 @@ class ConnectionConnectTests(LDAPConnectionTests):
     def test_connect_optimeout_specified(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory, op_timeout=99)
         connection = conn.connect()
-        self.assertEquals(connection.timeout, 99)
+        self.assertEqual(connection.timeout, 99)
 
     def test_connect_conntimeout_specified(self):
         import ldap
-        conn = self._makeOne('host', 636, 'ldap', self._factory, conn_timeout=99)
+        conn = self._makeOne('host', 636, 'ldap', self._factory,
+                             conn_timeout=99)
         connection = conn.connect()
-        self.assertEquals(connection.options.get(ldap.OPT_NETWORK_TIMEOUT), 99)
+        self.assertEqual(connection.options.get(ldap.OPT_NETWORK_TIMEOUT), 99)
 
     def test_connect_ldap_starttls(self):
         conn = self._makeOne('host', 636, 'ldaptls', self._factory)
@@ -84,16 +82,15 @@ class ConnectionConnectTests(LDAPConnectionTests):
 
     def test_connect_ldaperror_raises(self):
         import ldap
-        conn, ldap_connection = self._makeRaising( 'start_tls_s'
-                                                 , ldap.SERVER_DOWN
-                                                 )
+        conn, ldap_connection = self._makeRaising('start_tls_s',
+                                                  ldap.SERVER_DOWN)
         self.assertRaises(ldap.SERVER_DOWN, conn.connect)
 
     def test_connect_cannot_set_referrals(self):
         import ldap
         conn, ldap_connection = self._makeRaising('set_option', ldap.LDAPError)
         connection = conn.connect()
-        self.failIf(connection.options.has_key(ldap.OPT_REFERRALS))
+        self.assertFalse(ldap.OPT_REFERRALS in connection.options)
 
     def test_disconnect_clears_connection_cache(self):
         conn = self._makeSimple()
@@ -101,19 +98,17 @@ class ConnectionConnectTests(LDAPConnectionTests):
         attrs = {'userPassword': hash_pwd('pass')}
         conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
 
-        response = conn.search( 'dc=localhost'
-                              , fltr='(cn=foo)'
-                              , bind_dn='cn=foo,dc=localhost'
-                              , bind_pwd='pass'
-                              )
-        self.assertEquals(response['size'], 1)
+        response = conn.search('dc=localhost', fltr='(cn=foo)',
+                               bind_dn='cn=foo,dc=localhost', bind_pwd='pass')
+        self.assertEqual(response['size'], 1)
 
         connection = conn._getConnection()
         self.assertNotEquals(connection, None)
-        self.assertEquals(connection._last_bind[1], ('cn=foo,dc=localhost', 'pass'))
+        self.assertEqual(connection._last_bind[1],
+                         ('cn=foo,dc=localhost', 'pass'))
 
         conn.disconnect()
-        self.assertEquals(conn._getConnection(), None)
+        self.assertEqual(conn._getConnection(), None)
 
     def test_disconnect_unbinds_connection(self):
         conn = self._makeSimple()
@@ -121,38 +116,30 @@ class ConnectionConnectTests(LDAPConnectionTests):
         attrs = {'userPassword': hash_pwd('pass')}
         conn.insert('dc=localhost', 'cn=foo', attrs=attrs)
 
-        response = conn.search( 'dc=localhost'
-                              , fltr='(cn=foo)'
-                              , bind_dn='cn=foo,dc=localhost'
-                              , bind_pwd='pass'
-                              )
-        self.assertEquals(response['size'], 1)
+        response = conn.search('dc=localhost', fltr='(cn=foo)',
+                               bind_dn='cn=foo,dc=localhost', bind_pwd='pass')
+        self.assertEqual(response['size'], 1)
 
         connection = conn._getConnection()
         self.assertNotEquals(connection, None)
-        self.assertEquals(connection._last_bind[1], ('cn=foo,dc=localhost', 'pass'))
+        self.assertEqual(connection._last_bind[1],
+                         ('cn=foo,dc=localhost', 'pass'))
 
         conn.disconnect()
-        self.assertEquals(connection._last_bind, None)
+        self.assertEqual(connection._last_bind, None)
 
     def test_rebind_with_same_password(self):
         conn = self._makeSimple()
 
         attrs = {'userPassword': hash_pwd('pass')}
-        conn.insert( 'dc=localhost'
-                   , 'cn=foo'
-                   , attrs=attrs
-                   , bind_dn='cn=Manager,dc=localhost'
-                   , bind_pwd='pass'
-                   )
+        conn.insert('dc=localhost', 'cn=foo', attrs=attrs,
+                    bind_dn='cn=Manager,dc=localhost', bind_pwd='pass')
         connection = conn._getConnection()
-        self.assertEqual(connection._last_bind[1], ('cn=Manager,dc=localhost', 'pass'))
+        self.assertEqual(connection._last_bind[1],
+                         ('cn=Manager,dc=localhost', 'pass'))
 
-        conn.search( 'dc=localhost'
-                   , fltr='(cn=foo)'
-                   , bind_dn='cn=foo,dc=localhost'
-                   , bind_pwd='pass'
-                   )
+        conn.search('dc=localhost', fltr='(cn=foo)',
+                    bind_dn='cn=foo,dc=localhost', bind_pwd='pass')
         connection = conn._getConnection()
-        self.assertEqual(connection._last_bind[1], ('cn=foo,dc=localhost', 'pass'))
-
+        self.assertEqual(connection._last_bind[1],
+                         ('cn=foo,dc=localhost', 'pass'))

@@ -13,11 +13,10 @@
 """ test_connection_insert: Tests for the LDAPConnection insert method
 """
 
-import unittest
-
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
 from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+
 
 class ConnectionInsertTests(LDAPConnectionTests):
 
@@ -34,60 +33,54 @@ class ConnectionInsertTests(LDAPConnectionTests):
         bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
         bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
         self._addRecord(bind_dn_serverencoded, userPassword='foo')
-        conn.insert( 'dc=localhost'
-                   , 'cn=jens'
-                   , attrs={}
-                   , bind_dn=bind_dn_apiencoded
-                   , bind_pwd='foo'
-                   )
+        conn.insert('dc=localhost', 'cn=jens', attrs={},
+                    bind_dn=bind_dn_apiencoded, bind_pwd='foo')
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, bind_dn_serverencoded)
         self.assertEqual(bindpwd, 'foo')
 
     def test_insert(self):
-        attributes = { 'cn' : 'jens'
-                     , 'multivaluestring' : 'val1;val2;val3'
-                     , 'multivaluelist' : ['val1', 'val2']
-                     }
+        attributes = {'cn': 'jens',
+                      'multivaluestring': 'val1;val2;val3',
+                      'multivaluelist': ['val1', 'val2']}
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=jens', attrs=attributes)
 
         results = conn.search('dc=localhost', fltr='(cn=jens)')
-        self.assertEquals(len(results['results']), 1)
-        self.assertEquals(results['size'], 1)
+        self.assertEqual(len(results['results']), 1)
+        self.assertEqual(results['size'], 1)
 
         record = results['results'][0]
-        self.assertEquals(record['dn'], 'cn=jens,dc=localhost')
-        self.assertEquals(record['cn'], ['jens'])
-        self.assertEquals(record['multivaluestring'], ['val1','val2','val3'])
-        self.assertEquals(record['multivaluelist'], ['val1','val2'])
+        self.assertEqual(record['dn'], 'cn=jens,dc=localhost')
+        self.assertEqual(record['cn'], ['jens'])
+        self.assertEqual(record['multivaluestring'],
+                         ['val1', 'val2', 'val3'])
+        self.assertEqual(record['multivaluelist'], ['val1', 'val2'])
 
     def test_insert_readonly(self):
-        conn = self._makeOne('host', 636, 'ldap', self._factory, read_only=True)
-        self.assertRaises(RuntimeError, conn.insert, 'dc=localhost', 'cn=jens')
+        conn = self._makeOne('host', 636, 'ldap', self._factory,
+                             read_only=True)
+        self.assertRaises(RuntimeError, conn.insert, 'dc=localhost',
+                          'cn=jens')
 
     def test_insert_referral(self):
         import ldap
-        exc_arg = {'info':'please go to ldap://otherhost:1389'}
-        conn, ldap_connection = self._makeRaising( 'add_s'
-                                                 , ldap.REFERRAL
-                                                 , exc_arg
-                                                 )
-        conn.insert('dc=localhost', 'cn=jens', attrs={'cn':['jens']})
+        exc_arg = {'info': 'please go to ldap://otherhost:1389'}
+        conn, ldap_connection = self._makeRaising('add_s', ldap.REFERRAL,
+                                                  exc_arg)
+        conn.insert('dc=localhost', 'cn=jens', attrs={'cn': ['jens']})
         self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
-        self.assertEquals( ldap_connection.args
-                         , ('cn=jens,dc=localhost', [('cn', ['jens'])])
-                         )
+        self.assertEqual(ldap_connection.args,
+                         ('cn=jens,dc=localhost', [('cn', ['jens'])]))
 
     def test_insert_binary(self):
         conn = self._makeSimple()
-        conn.insert('dc=localhost', 'cn=jens', {'objectguid;binary' : u'a'})
+        conn.insert('dc=localhost', 'cn=jens', {'objectguid;binary': u'a'})
 
         results = conn.search('dc=localhost', fltr='(cn=jens)')
-        self.assertEquals(len(results['results']), 1)
-        self.assertEquals(results['size'], 1)
+        self.assertEqual(len(results['results']), 1)
+        self.assertEqual(results['size'], 1)
 
         record = results['results'][0]
-        self.assertEquals(record['objectguid'], u'a')
-
+        self.assertEqual(record['objectguid'], u'a')

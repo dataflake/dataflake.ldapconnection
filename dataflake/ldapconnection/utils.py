@@ -15,13 +15,14 @@
 
 import ldap
 
+
 BINARY_ATTRIBUTES = ('objectguid', 'jpegphoto')
 
+
 def escape_dn(dn):
-    """ Escape all characters that need escaping for a DN, see RFC 2253 
+    """ Escape all characters that need escaping for a DN, see RFC 2253
     """
     if dn is None:
         return None
 
     return ldap.dn.dn2str(ldap.dn.str2dn(dn))
-

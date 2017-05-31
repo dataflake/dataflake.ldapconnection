@@ -38,7 +38,8 @@ setup(name=NAME,
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
+        "Topic :: System :: Systems Administration :: \
+            Authentication/Directory :: LDAP",
         ],
       keywords='ldap ldapv3',
       author="Agendaless Consulting and Jens Vagelpohl",
@@ -49,7 +50,7 @@ setup(name=NAME,
       include_package_data=True,
       namespace_packages=['dataflake'],
       zip_safe=False,
-      tests_require = [
+      tests_require=[
         'python-ldap>=2.3.0',
         'dataflake.cache',
         'dataflake.fakeldap',
@@ -62,7 +63,7 @@ setup(name=NAME,
         'dataflake.fakeldap',
         ],
       test_suite='%s.tests' % NAME,
-      extras_require={ 
+      extras_require={
         'docs': ['sphinx', 'repoze.sphinx.autointerface'],
         'testing': ['nose', 'coverage'],
         },

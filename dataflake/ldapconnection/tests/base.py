@@ -57,9 +57,11 @@ class LDAPConnectionTests(unittest.TestCase):
     def _makeRaising(self, raise_on, exc_class, exc_arg=None):
         ldap_connection = RaisingFakeLDAPConnection('conn_string')
         ldap_connection.setExceptionAndMethod(raise_on, exc_class, exc_arg)
+
         def factory(conn_string):
             ldap_connection.conn_string = conn_string
             return ldap_connection
+
         conn = self._makeOne('host', 389, 'ldaptls', factory)
 
         return conn, ldap_connection
@@ -67,9 +69,11 @@ class LDAPConnectionTests(unittest.TestCase):
     def _makeFixedResultConnection(self, results):
         ldap_connection = FixedResultFakeLDAPConnection()
         ldap_connection.search_results = results
+
         def factory(conn_string):
             ldap_connection.conn_string = conn_string
             return ldap_connection
+
         conn = self._makeOne('host', 389, 'ldaptls', factory)
 
         return conn
@@ -86,6 +90,3 @@ class LDAPConnectionTests(unittest.TestCase):
             elif isinstance(value, basestring):
                 value = [value]
             record[key] = value
-
-
-

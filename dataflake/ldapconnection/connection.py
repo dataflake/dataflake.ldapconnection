@@ -12,16 +12,13 @@
 ##############################################################################
 """ LDAPConnection: A class modeling a LDAP server connection
 
-Instances of this class offer a simplified API to do searches, insertions, 
+Instances of this class offer a simplified API to do searches, insertions,
 deletions or modifications.
 """
 
-import codecs
 import ldap
-from ldap.dn import explode_dn
 from ldap.dn import dn2str
 from ldap.dn import str2dn
-from ldap.filter import filter_format
 from ldap.ldapobject import ReconnectLDAPObject
 import ldapurl
 import logging
@@ -33,6 +30,7 @@ from dataflake.cache.simple import LockingSimpleCache
 from dataflake.ldapconnection.interfaces import ILDAPConnection
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
 from dataflake.ldapconnection.utils import escape_dn
+
 
 default_logger = logging.getLogger('dataflake.ldapconnection')
 connection_cache = LockingSimpleCache()
@@ -47,11 +45,10 @@ class LDAPConnection(object):
 
     implements(ILDAPConnection)
 
-    def __init__( self, host='', port=389, protocol='ldap'
-                , c_factory=ReconnectLDAPObject, rdn_attr='', bind_dn=''
-                , bind_pwd='', read_only=False
-                , conn_timeout=-1, op_timeout=-1, logger=None
-                ):
+    def __init__(self, host='', port=389, protocol='ldap',
+                 c_factory=ReconnectLDAPObject, rdn_attr='', bind_dn='',
+                 bind_pwd='', read_only=False, conn_timeout=-1,
+                 op_timeout=-1, logger=None):
         """ LDAPConnection initialization
         """
         # Empty values here mean "use unicode"
@@ -84,26 +81,27 @@ class LDAPConnection(object):
         if protocol == 'ldaptls':
             protocol = 'ldap'
             start_tls = True
-        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
+        hp = '%s:%s' % (host, port)
+        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport=hp)
         server_url = l.initializeUrl()
-        self.servers[server_url] = { 'url' : server_url
-                                   , 'conn_timeout' : conn_timeout
-                                   , 'op_timeout' : op_timeout
-                                   , 'start_tls': start_tls
-                                   }
+        self.servers[server_url] = {'url': server_url,
+                                    'conn_timeout': conn_timeout,
+                                    'op_timeout': op_timeout,
+                                    'start_tls': start_tls}
 
     def removeServer(self, host, port, protocol):
         """ Remove a server definition from the list of servers used
         """
-        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport='%s:%s' % (host, port))
+        hp = '%s:%s' % (host, port)
+        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport=hp)
         server_url = l.initializeUrl()
         if server_url in self.servers.keys():
             del self.servers[server_url]
 
     def connect(self, bind_dn=None, bind_pwd=None):
-        """ initialize an ldap server connection 
+        """ initialize an ldap server connection
 
-        This method returns an instance of the underlying `python-ldap` 
+        This method returns an instance of the underlying `python-ldap`
         connection class. It does not need to be called explicitly, all
         other operations call it implicitly.
         """
@@ -121,19 +119,17 @@ class LDAPConnection(object):
         if conn is None:
             for server in self.servers.values():
                 try:
-                    conn = self._connect( server['url']
-                                        , conn_timeout=server['conn_timeout']
-                                        , op_timeout=server['op_timeout']
-                                        )
+                    conn = self._connect(server['url'],
+                                         conn_timeout=server['conn_timeout'],
+                                         op_timeout=server['op_timeout'])
                     if server.get('start_tls', None):
                         conn.start_tls_s()
                     break
-                except (ldap.SERVER_DOWN, ldap.TIMEOUT, ldap.LOCAL_ERROR), e:
+                except (ldap.SERVER_DOWN, ldap.TIMEOUT, ldap.LOCAL_ERROR) as e:
                     conn = None
                     continue
 
             if conn is None:
-                exception_string = str(e or 'no exception')
                 msg = 'Failure connecting, last attempt: %s (%s)' % (
                             server['url'], str(e or 'no exception'))
                 self.logger().critical(msg, exc_info=1)
@@ -144,9 +140,9 @@ class LDAPConnection(object):
             connection_cache.set(self.hash, conn)
 
         last_bind = getattr(conn, '_last_bind', None)
-        if ( not last_bind or
-             last_bind[1][0] != bind_dn or
-             last_bind[1][1] != bind_pwd ):
+        if not last_bind or \
+           last_bind[1][0] != bind_dn or \
+           last_bind[1][1] != bind_pwd:
             conn.simple_bind_s(bind_dn, bind_pwd)
 
         return conn
@@ -156,12 +152,8 @@ class LDAPConnection(object):
         """
         return connection_cache.get(self.hash)
 
-    def _connect( self
-                , connection_string
-                , conn_timeout=5
-                , op_timeout=-1
-                ):
-        """ Factored out to allow usage by other pieces 
+    def _connect(self, connection_string, conn_timeout=5, op_timeout=-1):
+        """ Factored out to allow usage by other pieces
 
         user_dn is assumed to have been encoded/escaped correctly
         """
@@ -170,7 +162,7 @@ class LDAPConnection(object):
         # Deny auto-chasing of referrals to be safe, we handle them instead
         try:
             connection.set_option(ldap.OPT_REFERRALS, ldap.DEREF_NEVER)
-        except ldap.LDAPError: # Cannot set referrals, so do nothing
+        except ldap.LDAPError:  # Cannot set referrals, so do nothing
             pass
 
         # Set the connection timeout
@@ -191,16 +183,9 @@ class LDAPConnection(object):
             connection_cache.invalidate(self.hash)
             conn.unbind_s()
 
-    def search( self
-              , base
-              , scope=ldap.SCOPE_SUBTREE
-              , fltr='(objectClass=*)'
-              , attrs=None
-              , convert_filter=True
-              , bind_dn=None
-              , bind_pwd=None
-              , raw=False
-              ):
+    def search(self, base, scope=ldap.SCOPE_SUBTREE, fltr='(objectClass=*)',
+               attrs=None, convert_filter=True, bind_dn=None, bind_pwd=None,
+               raw=False):
         """ Search for entries in the database
         """
         result = {'size': 0, 'results': [], 'exception': ''}
@@ -213,7 +198,7 @@ class LDAPConnection(object):
             res = connection.search_s(base, scope, fltr, attrs)
         except ldap.PARTIAL_RESULTS:
             res_type, res = connection.result(all=0)
-        except ldap.REFERRAL, e:
+        except ldap.REFERRAL as e:
             connection = self._handle_referral(e)
 
             try:
@@ -226,11 +211,12 @@ class LDAPConnection(object):
             # be a dictionary in some cases (instead, it can be a list)
             # An example of a useless "res" entry that can be ignored
             # from AD is
-            # (None, ['ldap://ForestDnsZones.PORTAL.LOCAL/DC=ForestDnsZones,DC=PORTAL,DC=LOCAL'])
+            # (None, ['ldap://ForestDnsZones.PORTAL.LOCAL/DC=ForestDnsZones,\
+            # DC=PORTAL,DC=LOCAL'])
             # This appears to be some sort of internal referral, but
             # we can't handle it, so we need to skip over it.
             try:
-                items =  rec_dict.items()
+                items = rec_dict.items()
             except AttributeError:
                 # 'items' not found on rec_dict
                 continue
@@ -254,11 +240,11 @@ class LDAPConnection(object):
         return result
 
     def insert(self, base, rdn, attrs=None, bind_dn=None, bind_pwd=None):
-        """ Insert a new record 
+        """ Insert a new record
 
         attrs is expected to be a mapping where the value may be a string
-        or a sequence of strings. 
-        Multiple values may be expressed as a single string if the values 
+        or a sequence of strings.
+        Multiple values may be expressed as a single string if the values
         are semicolon-delimited.
         Values can be marked as binary values, meaning they are not encoded
         as UTF-8, by appending ';binary' to the key.
@@ -294,7 +280,7 @@ class LDAPConnection(object):
             connection.add_s(dn, attribute_list)
 
     def delete(self, dn, bind_dn=None, bind_pwd=None):
-        """ Delete a record 
+        """ Delete a record
         """
         self._complainIfReadOnly()
 
@@ -307,19 +293,16 @@ class LDAPConnection(object):
             connection = self._handle_referral(e)
             connection.delete_s(dn)
 
-    def modify(self, dn, mod_type=None, attrs=None, bind_dn=None, bind_pwd=None):
-        """ Modify a record 
+    def modify(self, dn, mod_type=None, attrs=None, bind_dn=None,
+               bind_pwd=None):
+        """ Modify a record
         """
         self._complainIfReadOnly()
 
         unescaped_dn = self._encode_incoming(dn)
         dn = escape_dn(unescaped_dn)
-        res = self.search( base=unescaped_dn
-                         , scope=ldap.SCOPE_BASE
-                         , bind_dn=bind_dn
-                         , bind_pwd=bind_pwd
-                         , raw=True
-                         )
+        res = self.search(base=unescaped_dn, scope=ldap.SCOPE_BASE,
+                          bind_dn=bind_dn, bind_pwd=bind_pwd, raw=True)
         attrs = attrs and attrs or {}
         cur_rec = res['results'][0]
         mod_list = []
@@ -334,16 +317,18 @@ class LDAPConnection(object):
                 values = [self._encode_incoming(x) for x in values]
 
             if mod_type is None:
-                if not cur_rec.has_key(key) and values != ['']:
+                if key not in cur_rec and values != ['']:
                     mod_list.append((ldap.MOD_ADD, key, values))
-                elif cur_rec.get(key,['']) != values and values not in ([''],[]):
+                elif cur_rec.get(key, ['']) != values and \
+                        values not in ([''], []):
                     mod_list.append((ldap.MOD_REPLACE, key, values))
-                elif cur_rec.has_key(key) and values in ([''], []):
+                elif key in cur_rec and values in ([''], []):
                     mod_list.append((ldap.MOD_DELETE, key, None))
-            elif mod_type in (ldap.MOD_ADD, ldap.MOD_DELETE) and values == ['']:
+            elif mod_type in (ldap.MOD_ADD, ldap.MOD_DELETE) and \
+                    values == ['']:
                 continue
-            elif ( mod_type == ldap.MOD_DELETE and
-                   set(values).difference(set(cur_rec.get(key, []))) ):
+            elif mod_type == ldap.MOD_DELETE and \
+                    set(values).difference(set(cur_rec.get(key, []))):
                 continue
             else:
                 mod_list.append((mod_type, key, values))
@@ -374,12 +359,12 @@ class LDAPConnection(object):
                 debug_msg = 'Nothing to modify: %s' % dn
                 self.logger().debug(debug_msg)
 
-        except ldap.REFERRAL, e:
+        except ldap.REFERRAL as e:
             connection = self._handle_referral(e)
             connection.modify_s(dn, mod_list)
 
     def _handle_referral(self, exception):
-        """ Handle a referral specified in the passed-in exception 
+        """ Handle a referral specified in the passed-in exception
         """
         payload = exception.args[0]
         info = payload.get('info')
@@ -408,10 +393,10 @@ class LDAPConnection(object):
 
         - if "value" is unicode, it will be encoded to self.ldap_encoding, but
           only if self.ldap_encoding is set.
-        - if "value" is not unicode, it is assumed to be encoded as 
+        - if "value" is not unicode, it is assumed to be encoded as
           self.api_encoding. It is decoded and encoded to self.ldap_encoding
-          if self.ldap_encoding is set, unless self.api_encoding and 
-          self.ldap_encoding are identical. In that case the passed-in value 
+          if self.ldap_encoding is set, unless self.api_encoding and
+          self.ldap_encoding are identical. In that case the passed-in value
           is handed back unchanged.
         """
         if value is None:
@@ -428,7 +413,7 @@ class LDAPConnection(object):
 
                     if self.ldap_encoding:
                         value = value.encode(self.ldap_encoding)
-        
+
         return value
 
     def _encode_outgoing(self, value):
@@ -436,10 +421,10 @@ class LDAPConnection(object):
 
         - if "value" is unicode, it will be encoded to self.api_encoding, but
           only if self.api_encoding is set.
-        - if "value" is not unicode, it is assumed to be encoded as 
+        - if "value" is not unicode, it is assumed to be encoded as
           self.ldap_encoding. It is decoded and encoded to self.api_encoding
-          if self.api_encoding is set, unless self.ldap_encoding and 
-          self.api_encoding are identical. In that case the passed-in value 
+          if self.api_encoding is set, unless self.ldap_encoding and
+          self.api_encoding are identical. In that case the passed-in value
           is handed back unchanged.
         """
         if value is None:
@@ -456,5 +441,5 @@ class LDAPConnection(object):
 
                     if self.api_encoding:
                         value = value.encode(self.api_encoding)
-        
+
         return value

@@ -17,6 +17,7 @@ import unittest
 
 from dataflake.ldapconnection.utils import escape_dn
 
+
 class UtilsTest(unittest.TestCase):
 
     def test_escape_dn(self):
@@ -26,4 +27,3 @@ class UtilsTest(unittest.TestCase):
         self.assertEquals(escape_dn(dn), dn_clean)
 
         self.assertEquals(escape_dn(None), None)
-
