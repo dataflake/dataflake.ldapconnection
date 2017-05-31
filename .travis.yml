@@ -1,0 +1,27 @@
+# custom
+language: python
+sudo: false
+python:
+    - 2.7
+    - 3.4
+    - 3.5
+    - 3.6
+
+install:
+    - pip install -U setuptools==33.1.1 coveralls coverage
+    - python bootstrap.py
+    - bin/buildout
+
+script:
+    - coverage run bin/test -v1
+after_success:
+    - coverage combine
+    - coveralls
+
+notifications:
+    email: false
+
+cache:
+  pip: true
+  directories:
+    - eggs/
