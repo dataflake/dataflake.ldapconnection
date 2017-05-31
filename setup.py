@@ -11,8 +11,6 @@
 #
 ##############################################################################
 
-__version__ = '1.6dev'
-
 import os
 from setuptools import find_packages
 from setuptools import setup
@@ -28,7 +26,7 @@ def read(*rnames):
 
 
 setup(name=NAME,
-      version=__version__,
+      version=read('version.txt').strip(),
       description='LDAP connection library',
       long_description=(read('README.txt') + _boundary + _dl),
       classifiers=[
@@ -65,8 +63,7 @@ setup(name=NAME,
         ],
       test_suite='%s.tests' % NAME,
       extras_require={ 
-        'docs': ['sphinx', 'repoze.sphinx.autointerface',
-                 'pkginfo', 'sphinx-pypi-upload', 'zc.rst2'],
+        'docs': ['sphinx', 'repoze.sphinx.autointerface'],
         'testing': ['nose', 'coverage'],
         },
       )
