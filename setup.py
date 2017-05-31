@@ -48,7 +48,6 @@ setup(name='dataflake.ldapconnection',
       include_package_data=True,
       namespace_packages=['dataflake'],
       zip_safe=False,
-      setup_requires=['setuptools-git'],
       tests_require = [
               'python-ldap>=2.3.0',
               'dataflake.cache',
