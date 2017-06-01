@@ -48,7 +48,6 @@ setup(name=NAME,
       license="ZPL 2.1",
       packages=find_packages(),
       include_package_data=True,
-      namespace_packages=['dataflake'],
       zip_safe=False,
       tests_require=[
         'python-ldap>=2.3.0',
