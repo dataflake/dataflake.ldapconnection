@@ -1,8 +1,4 @@
 Change log
-
-1.9 (unreleased)
-----------------
-
 ==========
 
 1.6 (unreleased)
