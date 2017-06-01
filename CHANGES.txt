@@ -5,6 +5,13 @@ Change log
 ----------------
 - PEP 8 code cleanup
 - added Travis CI automatic testing configuration
+- use pkgutil-style namespace declaration
+- package cleanup (``.gitignore``, ``MANIFEST.in``, ``README.rst``)
+- docs cleanup (``Makefile``, ``conf.py``)
+- tests cleanup (``tox.ini``, ``.travis.yml``)
+- remove unsupported documentation bits
+- fix coverage tests to only test this package
+- remove coveralls from the Travis CI configuration
 
 
 1.5 (2012-04-20)
