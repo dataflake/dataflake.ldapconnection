@@ -12,29 +12,31 @@
 ##############################################################################
 
 import os
+
 from setuptools import find_packages
 from setuptools import setup
 
 
-NAME = 'dataflake.ldapconnection'
 _boundary = '\n' + ('-' * 60) + '\n\n'
 _dl = 'Download\n========'
+NAME = 'dataflake.ldapconnection'
 
 
 def read(*rnames):
-    return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
+    with open(os.path.join(os.path.dirname(__file__), *rnames)) as f:
+        return f.read()
 
 
 setup(name=NAME,
       version=read('version.txt').strip(),
       description='LDAP connection library',
-      long_description=(read('README.txt') + _boundary + _dl),
+      long_description=(read('README.rst') + _boundary + _dl),
       classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Zope Public License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Software Development :: Libraries :: Python Modules",

@@ -1,17 +1,20 @@
-
-# /
-/*.egg-info
-/*.egg
-/dist
-/develop-eggs
-/bin
-/parts
-/.installed.cfg
-/.coverage
-/.tox
-coverage.xml
+*.egg-info
+*.pyc
+*.pyo
+*$py.class
+*.so
+__pycache__
+.coverage
+.installed.cfg
+.mr.developer.cfg
 nosetests.xml
-*.class
-
-# /docs/
-/docs/_build
+coverage.xml
+.eggs/
+.tox/
+bin/
+build/
+eggs/
+develop-eggs/
+dist/
+docs/_build/
+parts/
