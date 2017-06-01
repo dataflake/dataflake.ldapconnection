@@ -3,6 +3,8 @@ Change log
 
 1.6 (unreleased)
 ----------------
+- PEP 8 code cleanup
+- added Travis CI automatic testing configuration
 
 
 1.5 (2012-04-20)
