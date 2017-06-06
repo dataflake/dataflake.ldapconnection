@@ -14,11 +14,8 @@
 """
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UNICODE
-from dataflake.ldapconnection.tests.dummy import ISO_8859_7_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UNICODE
-from dataflake.ldapconnection.tests.dummy import ISO_8859_7_UTF8
+from dataflake.ldapconnection.tests.dummy import UNENCODED_GREEK
+from dataflake.ldapconnection.tests.dummy import UNENCODED_LATIN1
 from dataflake.fakeldap import FakeLDAPConnection
 
 
@@ -39,13 +36,17 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.failIf(conn.read_only)
         self.assertEqual(conn._getConnection(), None)
         self.assertEqual(conn.c_factory, FakeLDAPConnection)
+        self.assertEqual(conn.ldap_encoding.lower(), 'utf-8')
+        self.assertEqual(conn.api_encoding.lower(), 'utf-8')
 
     def test_constructor(self):
-        bind_dn_encoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
+        bind_dn = u'cn=%s,dc=localhost' % UNENCODED_LATIN1
+        bind_dn_encoded = bind_dn.encode('ISO-8859-1')
         conn = self._makeOne('localhost', 389, 'ldap', 'factory',
                              bind_dn=bind_dn_encoded, bind_pwd='foo',
                              read_only=True, conn_timeout=5,
-                             op_timeout=10, logger='logger')
+                             op_timeout=10, logger='logger',
+                             ldap_encoding='', api_encoding='latin-1')
         self.assertTrue(isinstance(conn.bind_dn, str))
         self.assertEqual(conn.bind_dn, bind_dn_encoded)
         self.assertEqual(conn.bind_pwd, 'foo')
@@ -53,9 +54,11 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.assertEqual(conn._getConnection(), None)
         self.assertEqual(conn.c_factory, 'factory')
         self.assertEqual(conn.logger(), 'logger')
+        self.assertEqual(conn.ldap_encoding, '')
+        self.assertEqual(conn.api_encoding, 'latin-1')
 
     def test_constructor_unicode_bind_dn(self):
-        bind_dn_unicode = u'cn=%s,dc=localhost' % ISO_8859_1_UNICODE
+        bind_dn_unicode = u'cn=%s,dc=localhost' % UNENCODED_LATIN1
         conn = self._makeOne('localhost', 389, 'ldap', 'factory',
                              bind_dn=bind_dn_unicode, bind_pwd='foo')
         self.assertTrue(isinstance(conn.bind_dn, unicode))
@@ -68,23 +71,23 @@ class ConnectionBasicTests(LDAPConnectionTests):
 
         conn.api_encoding = None
         conn.ldap_encoding = None
-        self.assertEqual(conn._encode_incoming(ISO_8859_7_UNICODE),
-                         ISO_8859_7_UNICODE)
+        self.assertEqual(conn._encode_incoming(UNENCODED_GREEK),
+                         UNENCODED_GREEK)
 
         conn.api_encoding = 'iso-8859-7'
         conn.ldap_encoding = None
-        self.assertEqual(conn._encode_incoming(ISO_8859_7_ENCODED),
-                         ISO_8859_7_UNICODE)
+        result = conn._encode_incoming(UNENCODED_GREEK.encode('iso-8859-7'))
+        self.assertEqual(result, UNENCODED_GREEK)
 
         conn.api_encoding = None
         conn.ldap_encoding = 'iso-8859-7'
-        self.assertEqual(conn._encode_incoming(ISO_8859_7_UNICODE),
-                         ISO_8859_7_ENCODED)
+        self.assertEqual(conn._encode_incoming(UNENCODED_GREEK),
+                         UNENCODED_GREEK.encode('iso-8859-7'))
 
         conn.api_encoding = 'iso-8859-7'
         conn.ldap_encoding = 'UTF-8'
-        self.assertEqual(conn._encode_incoming(ISO_8859_7_ENCODED),
-                         ISO_8859_7_UTF8)
+        result = conn._encode_incoming(UNENCODED_GREEK.encode('iso-8859-7'))
+        self.assertEqual(result, UNENCODED_GREEK.encode('UTF-8'))
 
     def test_encode_outgoing(self):
         conn = self._makeSimple()
@@ -93,20 +96,20 @@ class ConnectionBasicTests(LDAPConnectionTests):
 
         conn.api_encoding = None
         conn.ldap_encoding = None
-        self.assertEqual(conn._encode_outgoing(ISO_8859_7_UNICODE),
-                         ISO_8859_7_UNICODE)
+        self.assertEqual(conn._encode_outgoing(UNENCODED_GREEK),
+                         UNENCODED_GREEK)
 
         conn.api_encoding = 'iso-8859-7'
         conn.ldap_encoding = None
-        self.assertEqual(conn._encode_outgoing(ISO_8859_7_UNICODE),
-                         ISO_8859_7_ENCODED)
+        self.assertEqual(conn._encode_outgoing(UNENCODED_GREEK),
+                         UNENCODED_GREEK.encode('iso-8859-7'))
 
         conn.api_encoding = None
         conn.ldap_encoding = 'iso-8859-7'
-        self.assertEqual(conn._encode_outgoing(ISO_8859_7_ENCODED),
-                         ISO_8859_7_UNICODE)
+        result = conn._encode_outgoing(UNENCODED_GREEK.encode('iso-8859-7'))
+        self.assertEqual(result, UNENCODED_GREEK)
 
         conn.api_encoding = 'iso-8859-7'
         conn.ldap_encoding = 'UTF-8'
-        self.assertEqual(conn._encode_outgoing(ISO_8859_7_UTF8),
-                         ISO_8859_7_ENCODED)
+        result = conn._encode_outgoing(UNENCODED_GREEK.encode('UTF-8'))
+        self.assertEqual(result, UNENCODED_GREEK.encode('iso-8859-7'))

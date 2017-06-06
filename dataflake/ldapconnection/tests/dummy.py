@@ -13,9 +13,7 @@
 """ dummy: dummy test fixtures
 """
 
-ISO_8859_1_UNICODE = u'\xe4\xf6\xfc\xdf'  # Umlauts a, o, u, sharp s
-ISO_8859_1_UTF8 = ISO_8859_1_UNICODE.encode('UTF-8')
-ISO_8859_1_ENCODED = ISO_8859_1_UNICODE.encode('iso-8859-1')
-ISO_8859_7_UNICODE = u'\u03b1\u03b2\u03b3\u03b4'  # Greek letters
-ISO_8859_7_UTF8 = ISO_8859_7_UNICODE.encode('UTF-8')
-ISO_8859_7_ENCODED = ISO_8859_7_UNICODE.encode('iso-8859-7')
+# From ISO-8859-1: Umlauts a, o, u and sharp s
+UNENCODED_LATIN1 = u'\xe4\xf6\xfc\xdf'
+# From ISO-8859-7 (Greek): Alpha, beta, gamma, delta
+UNENCODED_GREEK = u'\u03b1\u03b2\u03b3\u03b4'

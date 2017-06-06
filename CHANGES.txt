@@ -12,6 +12,9 @@ Change log
 - remove unsupported documentation bits
 - fix coverage tests to only test this package
 - remove coveralls from the Travis CI configuration
+- make the character sets used for communicating with the LDAP libraries
+  (``ldap_encoding``) and the calling side (``api_encoding``) 
+  configurable in the :mod:`LDAPConnection` constructor.
 
 
 1.5 (2012-04-20)

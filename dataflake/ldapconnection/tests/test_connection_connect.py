@@ -16,8 +16,7 @@
 from dataflake.fakeldap.utils import hash_pwd
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+from dataflake.ldapconnection.tests.dummy import UNENCODED_LATIN1
 
 
 class ConnectionConnectTests(LDAPConnectionTests):
@@ -37,9 +36,11 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.assertFalse(connection.start_tls_called)
 
     def test_connect_initial_bind_dn_not_None(self):
-        conn = self._makeSimple()
-        bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
-        bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
+        conn = self._makeOne('host', 636, 'ldap', self._factory,
+                             api_encoding='iso-8859-1')
+        bind_dn = u'cn=%s,dc=localhost' % UNENCODED_LATIN1
+        bind_dn_apiencoded = bind_dn.encode('iso8859-1')
+        bind_dn_serverencoded = bind_dn.encode('UTF-8')
         self._addRecord(bind_dn_serverencoded, userPassword='')
         connection = conn.connect(bind_dn_apiencoded, '')
         binduid, bindpwd = connection._last_bind[1]

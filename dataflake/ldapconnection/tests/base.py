@@ -44,14 +44,10 @@ class LDAPConnectionTests(unittest.TestCase):
 
     def _makeOne(self, *args, **kw):
         conn = self._getTargetClass()(*args, **kw)
-        conn.api_encoding = 'iso-8859-1'
-        conn.ldap_encoding = 'UTF-8'
         return conn
 
     def _makeSimple(self):
         conn = self._makeOne('host', 636, 'ldap', FakeLDAPConnection)
-        conn.api_encoding = 'iso-8859-1'
-        conn.ldap_encoding = 'UTF-8'
         return conn
 
     def _makeRaising(self, raise_on, exc_class, exc_arg=None):

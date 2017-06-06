@@ -14,8 +14,7 @@
 """
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_ENCODED
-from dataflake.ldapconnection.tests.dummy import ISO_8859_1_UTF8
+from dataflake.ldapconnection.tests.dummy import UNENCODED_LATIN1
 
 
 class ConnectionModifyTests(LDAPConnectionTests):
@@ -33,10 +32,12 @@ class ConnectionModifyTests(LDAPConnectionTests):
         self.assertEqual(bindpwd, '')
 
     def test_modify_authentication(self):
-        conn = self._makeSimple()
+        conn = self._makeOne('host', 636, 'ldap', self._factory,
+                             api_encoding='iso-8859-1')
         conn.insert('dc=localhost', 'cn=foo')
-        bind_dn_apiencoded = 'cn=%s,dc=localhost' % ISO_8859_1_ENCODED
-        bind_dn_serverencoded = 'cn=%s,dc=localhost' % ISO_8859_1_UTF8
+        bind_dn = u'cn=%s,dc=localhost' % UNENCODED_LATIN1
+        bind_dn_apiencoded = bind_dn.encode('iso-8859-1')
+        bind_dn_serverencoded = bind_dn.encode('UTF-8')
         self._addRecord(bind_dn_serverencoded, userPassword='foo', cn='foo')
         import ldap
         conn.modify('cn=foo,dc=localhost', mod_type=ldap.MOD_ADD,

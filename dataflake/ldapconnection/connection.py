@@ -48,18 +48,19 @@ class LDAPConnection(object):
     def __init__(self, host='', port=389, protocol='ldap',
                  c_factory=ReconnectLDAPObject, rdn_attr='', bind_dn='',
                  bind_pwd='', read_only=False, conn_timeout=-1,
-                 op_timeout=-1, logger=None):
+                 op_timeout=-1, logger=None, ldap_encoding='UTF-8',
+                 api_encoding='UTF-8'):
         """ LDAPConnection initialization
-        """
-        # Empty values here mean "use unicode"
-        self.ldap_encoding = 'UTF-8'
-        self.api_encoding = 'iso-8859-15'
 
+        Empty values for api_encoding or ldap_encoding mean "use unicode"
+        """
         self.bind_dn = bind_dn
         self.bind_pwd = bind_pwd
         self.read_only = read_only
         self.c_factory = c_factory
         self._logger = logger
+        self.ldap_encoding = ldap_encoding
+        self.api_encoding = api_encoding
         self.hash = id(self) + random()
 
         self.servers = {}
