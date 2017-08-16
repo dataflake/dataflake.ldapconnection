@@ -18,3 +18,4 @@ develop-eggs/
 dist/
 docs/_build/
 parts/
+src/
