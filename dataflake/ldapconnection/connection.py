@@ -112,16 +112,15 @@ class LDAPConnection(object):
             raise RuntimeError('No servers defined')
 
         if bind_dn is None:
-            bind_dn = escape_dn(self._encode_incoming(self.bind_dn), 
-                        self.ldap_encoding)
+            bind_dn = escape_dn(self._encode_incoming(self.bind_dn),
+                                self.ldap_encoding)
             bind_pwd = self._encode_incoming(self.bind_pwd)
         else:
             bind_dn = escape_dn(self._encode_incoming(bind_dn),
-                        self.ldap_encoding)
+                                self.ldap_encoding)
             bind_pwd = self._encode_incoming(bind_pwd)
 
         conn = self._getConnection()
-        exc_msg = ''
         if conn is None:
             for server in self.servers.values():
                 try:
@@ -199,7 +198,7 @@ class LDAPConnection(object):
         if convert_filter:
             fltr = self._encode_incoming(fltr)
         base = escape_dn(self._encode_incoming(base),
-                            self.ldap_encoding)
+                         self.ldap_encoding)
         connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
         try:
@@ -335,7 +334,8 @@ class LDAPConnection(object):
 
             if not is_binary:
                 if isinstance(values, six.string_types):
-                    values = [self._encode_incoming(x) for x in values.split(';')]
+                    values = [self._encode_incoming(x) for x in
+                              values.split(';')]
                 else:
                     values = [self._encode_incoming(x) for x in values]
 

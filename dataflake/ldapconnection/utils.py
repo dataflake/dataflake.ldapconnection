@@ -33,6 +33,7 @@ def escape_dn(dn, encoding='UTF-8'):
 
     return escaped
 
+
 def dn2str(dn_parts, encoding='UTF-8'):
     """ Build a DN string from a parts structure
     """

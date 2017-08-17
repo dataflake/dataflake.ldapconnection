@@ -36,9 +36,9 @@ class ConnectionServerTests(LDAPConnectionTests):
 
         self.assertEqual(len(servers), 2)
         self.assertTrue({'url': 'ldap://host:636', 'op_timeout': -1,
-                            'conn_timeout': -1, 'start_tls': False} in servers)
+                         'conn_timeout': -1, 'start_tls': False} in servers)
         self.assertTrue({'url': 'ldaps://localhost:636', 'op_timeout': 10,
-                            'conn_timeout': 5, 'start_tls': False} in servers)
+                         'conn_timeout': 5, 'start_tls': False} in servers)
 
     def test_add_server_ldaptls(self):
         conn = self._makeSimple()
@@ -48,9 +48,9 @@ class ConnectionServerTests(LDAPConnectionTests):
 
         self.assertEqual(len(servers), 2)
         self.assertTrue({'url': 'ldap://localhost:389', 'op_timeout': 10,
-                            'conn_timeout': 5, 'start_tls': True} in servers)
+                         'conn_timeout': 5, 'start_tls': True} in servers)
         self.assertTrue({'url': 'ldap://host:636', 'op_timeout': -1,
-                            'conn_timeout': -1, 'start_tls': False} in servers)
+                         'conn_timeout': -1, 'start_tls': False} in servers)
 
     def test_add_server_existing(self):
         # If a LDAP server definition with the same LDAP URL exists, it
