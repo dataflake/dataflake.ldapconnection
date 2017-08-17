@@ -24,8 +24,8 @@ class ConnectionInsertTests(LDAPConnectionTests):
         conn.insert('dc=localhost', 'cn=jens', attrs={})
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
-        self.assertEqual(binduid, '')
-        self.assertEqual(bindpwd, '')
+        self.assertEqual(binduid, b'')
+        self.assertEqual(bindpwd, b'')
 
     def test_insert_authentication(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory,
@@ -39,7 +39,7 @@ class ConnectionInsertTests(LDAPConnectionTests):
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, bind_dn_serverencoded)
-        self.assertEqual(bindpwd, 'foo')
+        self.assertEqual(bindpwd, b'foo')
 
     def test_insert(self):
         attributes = {'cn': 'jens',
@@ -53,11 +53,11 @@ class ConnectionInsertTests(LDAPConnectionTests):
         self.assertEqual(results['size'], 1)
 
         record = results['results'][0]
-        self.assertEqual(record['dn'], 'cn=jens,dc=localhost')
-        self.assertEqual(record['cn'], ['jens'])
-        self.assertEqual(record['multivaluestring'],
-                         ['val1', 'val2', 'val3'])
-        self.assertEqual(record['multivaluelist'], ['val1', 'val2'])
+        self.assertEqual(record['dn'], b'cn=jens,dc=localhost')
+        self.assertEqual(record[b'cn'], [b'jens'])
+        self.assertEqual(record[b'multivaluestring'],
+                         [b'val1', b'val2', b'val3'])
+        self.assertEqual(record[b'multivaluelist'], [b'val1', b'val2'])
 
     def test_insert_readonly(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory,
@@ -73,15 +73,15 @@ class ConnectionInsertTests(LDAPConnectionTests):
         conn.insert('dc=localhost', 'cn=jens', attrs={'cn': ['jens']})
         self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
         self.assertEqual(ldap_connection.args,
-                         ('cn=jens,dc=localhost', [('cn', ['jens'])]))
+                         (b'cn=jens,dc=localhost', [(b'cn', [b'jens'])]))
 
     def test_insert_binary(self):
         conn = self._makeSimple()
-        conn.insert('dc=localhost', 'cn=jens', {'objectguid;binary': u'a'})
+        conn.insert('dc=localhost', 'cn=jens', {'objectguid;binary': 'a'})
 
         results = conn.search('dc=localhost', fltr='(cn=jens)')
         self.assertEqual(len(results['results']), 1)
         self.assertEqual(results['size'], 1)
 
         record = results['results'][0]
-        self.assertEqual(record['objectguid'], u'a')
+        self.assertEqual(record[b'objectguid'], 'a')

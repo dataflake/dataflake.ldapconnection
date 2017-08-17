@@ -1,8 +1,9 @@
 Change log
 ==========
 
-1.6 (unreleased)
+2.0 (unreleased)
 ----------------
+- Python 3 compatibility
 - PEP 8 code cleanup
 - added Travis CI automatic testing configuration
 - use pkgutil-style namespace declaration

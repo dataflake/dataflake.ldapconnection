@@ -13,6 +13,7 @@
 """ unit tests base classes
 """
 
+import six
 import unittest
 
 from dataflake.fakeldap import FakeLDAPConnection
@@ -81,8 +82,10 @@ class LDAPConnectionTests(unittest.TestCase):
     def _addRecord(self, dn, **kw):
         record = self.db.addTreeItems(dn)
         for key, value in kw.items():
-            if key.lower() == 'userpassword':
+            if not isinstance(key, six.binary_type):
+                key = key.encode('UTF-8')
+            if key.lower() == b'userpassword':
                 value = [hash_pwd(value)]
-            elif isinstance(value, basestring):
+            elif not isinstance(value, list):
                 value = [value]
             record[key] = value

@@ -26,9 +26,8 @@ class ConnectionConnectTests(LDAPConnectionTests):
         conn = self._makeSimple()
         connection = conn.connect()
         binduid, bindpwd = connection._last_bind[1]
-        self.assertTrue(isinstance(binduid, str))
-        self.assertEqual(binduid, '')
-        self.assertEqual(bindpwd, '')
+        self.assertEqual(binduid, b'')
+        self.assertEqual(bindpwd, b'')
         self.assertFalse(getattr(connection, 'timeout', False))
         self.assertEqual(connection.options.get(ldap.OPT_REFERRALS),
                          ldap.DEREF_NEVER)
@@ -45,7 +44,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
         connection = conn.connect(bind_dn_apiencoded, '')
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, bind_dn_serverencoded)
-        self.assertEqual(bindpwd, '')
+        self.assertEqual(bindpwd, b'')
 
     def test_connect_non_initial(self):
         conn = self._makeSimple()
@@ -53,7 +52,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
 
         connection = conn.connect('cn=foo,dc=localhost', 'pass')
         binduid, bindpwd = connection._last_bind[1]
-        self.assertEqual(binduid, 'cn=foo,dc=localhost')
+        self.assertEqual(binduid, b'cn=foo,dc=localhost')
 
         connection = conn.connect(None, 'pass')
         binduid, bindpwd = connection._last_bind[1]
@@ -106,7 +105,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
         connection = conn._getConnection()
         self.assertNotEquals(connection, None)
         self.assertEqual(connection._last_bind[1],
-                         ('cn=foo,dc=localhost', 'pass'))
+                         (b'cn=foo,dc=localhost', b'pass'))
 
         conn.disconnect()
         self.assertEqual(conn._getConnection(), None)
@@ -124,7 +123,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
         connection = conn._getConnection()
         self.assertNotEquals(connection, None)
         self.assertEqual(connection._last_bind[1],
-                         ('cn=foo,dc=localhost', 'pass'))
+                         (b'cn=foo,dc=localhost', b'pass'))
 
         conn.disconnect()
         self.assertEqual(connection._last_bind, None)
@@ -137,10 +136,10 @@ class ConnectionConnectTests(LDAPConnectionTests):
                     bind_dn='cn=Manager,dc=localhost', bind_pwd='pass')
         connection = conn._getConnection()
         self.assertEqual(connection._last_bind[1],
-                         ('cn=Manager,dc=localhost', 'pass'))
+                         (b'cn=Manager,dc=localhost', b'pass'))
 
         conn.search('dc=localhost', fltr='(cn=foo)',
                     bind_dn='cn=foo,dc=localhost', bind_pwd='pass')
         connection = conn._getConnection()
         self.assertEqual(connection._last_bind[1],
-                         ('cn=foo,dc=localhost', 'pass'))
+                         (b'cn=foo,dc=localhost', b'pass'))

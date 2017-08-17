@@ -14,11 +14,15 @@
 """ test_connection_unicode: Tests for the LDAPConnection Unicode support
 """
 
+import six
+import unittest
+
 from dataflake.fakeldap.utils import hash_pwd
 
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 
 
+@unittest.skipIf(six.PY3, 'Not supported in Python 3')
 class UnicodeSupportTests(LDAPConnectionTests):
 
     def test_search_unicode_results(self):
@@ -33,9 +37,9 @@ class UnicodeSupportTests(LDAPConnectionTests):
 
         results = response['results']
         self.assertEqual(results[0],
-                         {'dn': u'cn=føø,dc=localhost',
-                          'cn': [u'føø'],
-                          'displayName': [u'Bjørn']})
+                         {'dn': u'cn=f\xf8\xf8,dc=localhost',
+                          'cn': [u'f\xf8\xf8'],
+                          'displayName': [u'Bj\xf8rn']})
 
     def test_search_raw_results(self):
         conn = self._makeSimple()
@@ -121,37 +125,37 @@ class UnicodeSupportTests(LDAPConnectionTests):
         conn = self._makeSimple()
         conn.api_encoding = None
 
-        attrs = {'displayName': u'Bjørn', 'cn': u'føø'}
-        conn.insert(u'dc=localhost', u'cn=føø', attrs=attrs)
-        attrs = {'cn': u'bår'}
-        conn.modify(u'cn=føø,dc=localhost', attrs=attrs)
+        attrs = {'displayName': u'Bj\xf8rn', 'cn': u'f\xf8\xf8'}
+        conn.insert(u'dc=localhost', u'cn=f\xf8\xf8', attrs=attrs)
+        attrs = {'cn': u'b\xe5r'}
+        conn.modify(u'cn=f\xf8\xf8,dc=localhost', attrs=attrs)
 
-        response = conn.search(u'dc=localhost', fltr=u'(cn=bår)')
+        response = conn.search(u'dc=localhost', fltr=u'(cn=b\xe5r)')
         self.assertEqual(response['size'], 1)
 
         results = response['results']
         self.assertEqual(results[0],
-                         {'dn': u'cn=bår,dc=localhost',
-                          'cn': [u'bår'],
-                          'displayName': [u'Bjørn']})
+                         {'dn': u'cn=b\xe5r,dc=localhost',
+                          'cn': [u'b\xe5r'],
+                          'displayName': [u'Bj\xf8rn']})
 
     def test_modify_multivalued_unicode_rdn(self):
         conn = self._makeSimple()
         conn.api_encoding = None
 
-        attrs = {'displayName': u'Bjørn', 'cn': [u'føø', u'Bjørn']}
-        conn.insert(u'dc=localhost', u'cn=føø', attrs=attrs)
-        attrs = {'cn': [u'bår', u'Bjørn']}
-        conn.modify(u'cn=føø,dc=localhost', attrs=attrs)
+        attrs = {'displayName': u'Bj\xf8rn', 'cn': [u'f\xf8\xf8', u'Bj\xf8rn']}
+        conn.insert(u'dc=localhost', u'cn=f\xf8\xf8', attrs=attrs)
+        attrs = {'cn': [u'b\xe5r', u'Bj\xf8rn']}
+        conn.modify(u'cn=f\xf8\xf8,dc=localhost', attrs=attrs)
 
-        response = conn.search(u'dc=localhost', fltr=u'(cn=bår)')
+        response = conn.search(u'dc=localhost', fltr=u'(cn=b\xe5r)')
         self.assertEqual(response['size'], 1)
 
         results = response['results']
         self.assertEqual(results[0],
-                         {'dn': u'cn=bår,dc=localhost',
-                          'cn': [u'bår', u'Bjørn'],
-                          'displayName': [u'Bjørn']})
+                         {'dn': u'cn=b\xe5r,dc=localhost',
+                          'cn': [u'b\xe5r', u'Bj\xf8rn'],
+                          'displayName': [u'Bj\xf8rn']})
 
     def test_delete_by_unicode_dn(self):
         conn = self._makeSimple()

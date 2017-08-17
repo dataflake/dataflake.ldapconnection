@@ -13,6 +13,8 @@
 """ test_connection_basic: Basic tests for the LDAPConnection class
 """
 
+import six
+
 from dataflake.ldapconnection.tests.base import LDAPConnectionTests
 from dataflake.ldapconnection.tests.dummy import UNENCODED_GREEK
 from dataflake.ldapconnection.tests.dummy import UNENCODED_LATIN1
@@ -30,8 +32,8 @@ class ConnectionBasicTests(LDAPConnectionTests):
 
     def test_constructor_defaults(self):
         conn = self._makeSimple()
-        self.assertTrue(isinstance(conn.bind_dn, str))
-        self.assertEqual(conn.bind_dn, '')
+        self.assertTrue(isinstance(conn.bind_dn, six.binary_type))
+        self.assertEqual(conn.bind_dn, b'')
         self.assertEqual(conn.bind_pwd, '')
         self.failIf(conn.read_only)
         self.assertEqual(conn._getConnection(), None)
@@ -40,15 +42,14 @@ class ConnectionBasicTests(LDAPConnectionTests):
         self.assertEqual(conn.api_encoding.lower(), 'utf-8')
 
     def test_constructor(self):
-        bind_dn = u'cn=%s,dc=localhost' % UNENCODED_LATIN1
-        bind_dn_encoded = bind_dn.encode('ISO-8859-1')
+        bind_dn = b'cn=%s,dc=localhost' % UNENCODED_LATIN1.encode('iso-8859-1')
         conn = self._makeOne('localhost', 389, 'ldap', 'factory',
-                             bind_dn=bind_dn_encoded, bind_pwd='foo',
+                             bind_dn=bind_dn, bind_pwd='foo',
                              read_only=True, conn_timeout=5,
                              op_timeout=10, logger='logger',
                              ldap_encoding='', api_encoding='latin-1')
-        self.assertTrue(isinstance(conn.bind_dn, str))
-        self.assertEqual(conn.bind_dn, bind_dn_encoded)
+        self.assertTrue(isinstance(conn.bind_dn, six.binary_type))
+        self.assertEqual(conn.bind_dn, bind_dn)
         self.assertEqual(conn.bind_pwd, 'foo')
         self.failUnless(conn.read_only)
         self.assertEqual(conn._getConnection(), None)
@@ -60,9 +61,11 @@ class ConnectionBasicTests(LDAPConnectionTests):
     def test_constructor_unicode_bind_dn(self):
         bind_dn_unicode = u'cn=%s,dc=localhost' % UNENCODED_LATIN1
         conn = self._makeOne('localhost', 389, 'ldap', 'factory',
-                             bind_dn=bind_dn_unicode, bind_pwd='foo')
-        self.assertTrue(isinstance(conn.bind_dn, unicode))
-        self.assertEqual(conn.bind_dn, bind_dn_unicode)
+                             bind_dn=bind_dn_unicode, bind_pwd='foo',
+                             api_encoding='')
+        self.assertTrue(isinstance(conn.bind_dn, six.binary_type))
+        self.assertEqual(conn.bind_dn,
+                         bind_dn_unicode.encode(conn.ldap_encoding))
 
     def test_encode_incoming(self):
         conn = self._makeSimple()

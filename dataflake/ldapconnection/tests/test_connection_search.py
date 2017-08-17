@@ -24,9 +24,8 @@ class ConnectionSearchTests(LDAPConnectionTests):
         conn.search('dc=localhost', 'scope')
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
-        self.assertTrue(isinstance(binduid, str))
-        self.assertEqual(binduid, '')
-        self.assertEqual(bindpwd, '')
+        self.assertEqual(binduid, b'')
+        self.assertEqual(bindpwd, b'')
 
     def test_search_authentication(self):
         conn = self._makeOne('host', 636, 'ldap', self._factory,
@@ -40,7 +39,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, bind_dn_serverencoded)
-        self.assertEqual(bindpwd, 'foo')
+        self.assertEqual(bindpwd, b'foo')
 
     def test_search_simple(self):
         conn = self._makeSimple()
@@ -50,10 +49,10 @@ class ConnectionSearchTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 1)
         self.assertEqual(len(response['results']), 1)
         self.assertEqual(response['results'][0],
-                         {'a': ['a'],
-                          'dn': 'cn=foo,dc=localhost',
-                          'cn': ['foo'],
-                          'b': ['x', 'y', 'z']})
+                         {b'a': [b'a'],
+                          'dn': b'cn=foo,dc=localhost',
+                          b'cn': [b'foo'],
+                          b'b': [b'x', b'y', b'z']})
 
     def test_search_nonascii(self):
         conn = self._makeSimple()
@@ -65,10 +64,10 @@ class ConnectionSearchTests(LDAPConnectionTests):
         results = response['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0],
-                         {'dn': 'cn=foo,dc=localhost',
-                          'a': [ISO_8859_1_ENCODED],
-                          'b': [ISO_8859_1_ENCODED],
-                          'cn': ['foo']})
+                         {'dn': b'cn=foo,dc=localhost',
+                          b'a': [ISO_8859_1_ENCODED],
+                          b'b': [ISO_8859_1_ENCODED],
+                          b'cn': [b'foo']})
 
     def test_search_bad_results(self):
         # Make sure the resultset omits "useless" entries that may be
@@ -82,7 +81,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0], {'a': 'a', 'dn': 'dn'})
+        self.assertEqual(results[0], {'a': b'a', 'dn': b'dn'})
 
     def test_search_partial_results(self):
         import ldap
@@ -92,7 +91,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0], {'dn': 'partial result'})
+        self.assertEqual(results[0], {'dn': b'partial result'})
 
     def test_search_referral(self):
         import ldap
@@ -113,7 +112,7 @@ class ConnectionSearchTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 1)
         results = response['results']
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0], {'dn': 'partial result'})
+        self.assertEqual(results[0], {'dn': b'partial result'})
 
     def test_search_bad_referral(self):
         import ldap
@@ -134,6 +133,6 @@ class ConnectionSearchTests(LDAPConnectionTests):
         results = response['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0],
-                         {'dn': 'cn=foo,dc=localhost',
-                          'cn': ['foo'],
-                          'objectguid': u'a'})
+                         {'dn': b'cn=foo,dc=localhost',
+                          b'cn': [b'foo'],
+                          b'objectguid': u'a'})

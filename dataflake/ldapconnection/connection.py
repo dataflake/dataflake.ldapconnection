@@ -17,18 +17,19 @@ deletions or modifications.
 """
 
 import ldap
-from ldap.dn import dn2str
 from ldap.dn import str2dn
 from ldap.ldapobject import ReconnectLDAPObject
 import ldapurl
 import logging
 from random import random
+import six
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from dataflake.cache.simple import LockingSimpleCache
 from dataflake.ldapconnection.interfaces import ILDAPConnection
 from dataflake.ldapconnection.utils import BINARY_ATTRIBUTES
+from dataflake.ldapconnection.utils import dn2str
 from dataflake.ldapconnection.utils import escape_dn
 
 
@@ -37,16 +38,15 @@ connection_cache = LockingSimpleCache()
 _marker = ()
 
 
+@implementer(ILDAPConnection)
 class LDAPConnection(object):
     """ LDAPConnection object
 
     See `interfaces.py` for interface documentation.
     """
 
-    implements(ILDAPConnection)
-
     def __init__(self, host='', port=389, protocol='ldap',
-                 c_factory=ReconnectLDAPObject, rdn_attr='', bind_dn='',
+                 c_factory=ReconnectLDAPObject, rdn_attr='', bind_dn=b'',
                  bind_pwd='', read_only=False, conn_timeout=-1,
                  op_timeout=-1, logger=None, ldap_encoding='UTF-8',
                  api_encoding='UTF-8'):
@@ -54,6 +54,8 @@ class LDAPConnection(object):
 
         Empty values for api_encoding or ldap_encoding mean "use unicode"
         """
+        if isinstance(bind_dn, six.text_type) and ldap_encoding:
+            bind_dn = bind_dn.encode(ldap_encoding)
         self.bind_dn = bind_dn
         self.bind_pwd = bind_pwd
         self.read_only = read_only
@@ -106,17 +108,20 @@ class LDAPConnection(object):
         connection class. It does not need to be called explicitly, all
         other operations call it implicitly.
         """
-        if len(self.servers.keys()) == 0:
+        if not self.servers:
             raise RuntimeError('No servers defined')
 
         if bind_dn is None:
-            bind_dn = escape_dn(self._encode_incoming(self.bind_dn))
+            bind_dn = escape_dn(self._encode_incoming(self.bind_dn), 
+                        self.ldap_encoding)
             bind_pwd = self._encode_incoming(self.bind_pwd)
         else:
-            bind_dn = escape_dn(self._encode_incoming(bind_dn))
+            bind_dn = escape_dn(self._encode_incoming(bind_dn),
+                        self.ldap_encoding)
             bind_pwd = self._encode_incoming(bind_pwd)
 
         conn = self._getConnection()
+        exc_msg = ''
         if conn is None:
             for server in self.servers.values():
                 try:
@@ -128,15 +133,16 @@ class LDAPConnection(object):
                     break
                 except (ldap.SERVER_DOWN, ldap.TIMEOUT, ldap.LOCAL_ERROR) as e:
                     conn = None
+                    exc = e
                     continue
 
             if conn is None:
                 msg = 'Failure connecting, last attempt: %s (%s)' % (
-                            server['url'], str(e or 'no exception'))
+                            server['url'], str(exc) or 'no exception')
                 self.logger().critical(msg, exc_info=1)
 
-                if e:
-                    raise e
+                if exc:
+                    raise exc
 
             connection_cache.set(self.hash, conn)
 
@@ -192,7 +198,8 @@ class LDAPConnection(object):
         result = {'size': 0, 'results': [], 'exception': ''}
         if convert_filter:
             fltr = self._encode_incoming(fltr)
-        base = escape_dn(self._encode_incoming(base))
+        base = escape_dn(self._encode_incoming(base),
+                            self.ldap_encoding)
         connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
         try:
@@ -217,7 +224,7 @@ class LDAPConnection(object):
             # This appears to be some sort of internal referral, but
             # we can't handle it, so we need to skip over it.
             try:
-                items = rec_dict.items()
+                items = list(rec_dict.items())
             except AttributeError:
                 # 'items' not found on rec_dict
                 continue
@@ -226,8 +233,10 @@ class LDAPConnection(object):
                 rec_dict['dn'] = rec_dn
             else:
                 for key, value in items:
-                    if key.lower() not in BINARY_ATTRIBUTES:
-                        if not isinstance(value, basestring):
+                    if key == b'dn':
+                        del rec_dict[key]
+                    elif key.lower() not in BINARY_ATTRIBUTES:
+                        if isinstance(value, (list, tuple)):
                             for i in range(len(value)):
                                 value[i] = self._encode_outgoing(value[i])
                         else:
@@ -251,10 +260,10 @@ class LDAPConnection(object):
         as UTF-8, by appending ';binary' to the key.
         """
         self._complainIfReadOnly()
-        base = escape_dn(self._encode_incoming(base))
-        rdn = escape_dn(self._encode_incoming(rdn))
+        base = escape_dn(self._encode_incoming(base), self.ldap_encoding)
+        rdn = escape_dn(self._encode_incoming(rdn), self.ldap_encoding)
 
-        dn = rdn + ',' + base
+        dn = rdn + b',' + base
         attribute_list = []
         attrs = attrs and attrs or {}
 
@@ -265,8 +274,13 @@ class LDAPConnection(object):
             else:
                 is_binary = False
 
-            if isinstance(values, basestring) and not is_binary:
+            if not isinstance(attr_key, six.binary_type):
+                attr_key = self._encode_incoming(attr_key)
+
+            if isinstance(values, six.string_types) and not is_binary:
                 values = [x.strip() for x in values.split(';')]
+            elif isinstance(values, six.binary_type) and not is_binary:
+                values = [x.strip() for x in values.split(b';')]
 
             if values != ['']:
                 if not is_binary:
@@ -276,7 +290,7 @@ class LDAPConnection(object):
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
             connection.add_s(dn, attribute_list)
-        except ldap.REFERRAL, e:
+        except ldap.REFERRAL as e:
             connection = self._handle_referral(e)
             connection.add_s(dn, attribute_list)
 
@@ -285,12 +299,12 @@ class LDAPConnection(object):
         """
         self._complainIfReadOnly()
 
-        dn = escape_dn(self._encode_incoming(dn))
+        dn = escape_dn(self._encode_incoming(dn), self.ldap_encoding)
 
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
             connection.delete_s(dn)
-        except ldap.REFERRAL, e:
+        except ldap.REFERRAL as e:
             connection = self._handle_referral(e)
             connection.delete_s(dn)
 
@@ -301,7 +315,7 @@ class LDAPConnection(object):
         self._complainIfReadOnly()
 
         unescaped_dn = self._encode_incoming(dn)
-        dn = escape_dn(unescaped_dn)
+        dn = escape_dn(unescaped_dn, self.ldap_encoding)
         res = self.search(base=unescaped_dn, scope=ldap.SCOPE_BASE,
                           bind_dn=bind_dn, bind_pwd=bind_pwd, raw=True)
         attrs = attrs and attrs or {}
@@ -312,21 +326,24 @@ class LDAPConnection(object):
 
             if key.endswith(';binary'):
                 key = key[:-7]
-            elif isinstance(values, basestring):
+            elif isinstance(values, six.string_types):
                 values = [self._encode_incoming(x) for x in values.split(';')]
             else:
                 values = [self._encode_incoming(x) for x in values]
 
+            if isinstance(key, six.text_type):
+                key = self._encode_incoming(key)
+
             if mod_type is None:
-                if key not in cur_rec and values != ['']:
+                if key not in cur_rec and values != [b'']:
                     mod_list.append((ldap.MOD_ADD, key, values))
-                elif cur_rec.get(key, ['']) != values and \
-                        values not in ([''], []):
+                elif cur_rec.get(key, [b'']) != values and \
+                        values not in ([b''], []):
                     mod_list.append((ldap.MOD_REPLACE, key, values))
-                elif key in cur_rec and values in ([''], []):
+                elif key in cur_rec and values in ([b''], []):
                     mod_list.append((ldap.MOD_DELETE, key, None))
             elif mod_type in (ldap.MOD_ADD, ldap.MOD_DELETE) and \
-                    values == ['']:
+                    values == [b'']:
                 continue
             elif mod_type == ldap.MOD_DELETE and \
                     set(values).difference(set(cur_rec.get(key, []))):
@@ -338,21 +355,28 @@ class LDAPConnection(object):
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
             dn_parts = str2dn(dn)
-            rdn = dn_parts[0]
-            rdn_attr = rdn[0][0]
+            clean_dn_parts = []
+            for dn_part in dn_parts:
+                for (attr_name, attr_val, flag) in dn_part:
+                    if isinstance(attr_name, six.text_type):
+                        attr_name = attr_name.encode('UTF-8')
+                    clean_dn_parts.append([(attr_name, attr_val, flag)])
+
+            rdn_attr = clean_dn_parts[0][0][0]
             raw_rdn = attrs.get(rdn_attr, '')
-            if isinstance(raw_rdn, basestring):
+            if isinstance(raw_rdn, six.string_types):
                 raw_rdn = [raw_rdn]
             new_rdn = raw_rdn[0]
 
             if new_rdn:
                 rdn_value = self._encode_incoming(new_rdn)
                 if rdn_value != cur_rec.get(rdn_attr)[0]:
-                    dn_parts[0] = [(rdn_attr, rdn_value, 1)]
+                    clean_dn_parts[0] = [(rdn_attr, rdn_value, 1)]
+                    dn_parts[0] = [(rdn_attr, raw_rdn[0], 1)]
                     raw_utf8_rdn = rdn_attr + '=' + rdn_value
-                    new_rdn = escape_dn(raw_utf8_rdn)
+                    new_rdn = escape_dn(raw_utf8_rdn, self.ldap_encoding)
                     connection.modrdn_s(dn, new_rdn)
-                    dn = dn2str(dn_parts)
+                    dn = dn2str(dn_parts, self.ldap_encoding)
 
             if mod_list:
                 connection.modify_s(dn, mod_list)
@@ -378,7 +402,7 @@ class LDAPConnection(object):
                                self._encode_incoming(self.bind_pwd))
             return conn
         else:
-            raise ldap.CONNECT_ERROR, 'Bad referral "%s"' % str(exception)
+            raise ldap.CONNECT_ERROR('Bad referral "%s"' % str(exception))
 
     def _complainIfReadOnly(self):
         """ Raise RuntimeError if the connection is set to `read-only`
@@ -403,7 +427,7 @@ class LDAPConnection(object):
         if value is None:
             return None
 
-        elif isinstance(value, unicode):
+        elif isinstance(value, six.text_type):
             if self.ldap_encoding:
                 value = value.encode(self.ldap_encoding)
 
@@ -431,7 +455,7 @@ class LDAPConnection(object):
         if value is None:
             return None
 
-        elif isinstance(value, unicode):
+        elif isinstance(value, six.text_type):
             if self.api_encoding:
                 value = value.encode(self.api_encoding)
 

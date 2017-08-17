@@ -25,9 +25,8 @@ class ConnectionDeleteTests(LDAPConnectionTests):
         conn.delete('cn=foo,dc=localhost')
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
-        self.assertTrue(isinstance(binduid, str))
-        self.assertEqual(binduid, '')
-        self.assertEqual(bindpwd, '')
+        self.assertEqual(binduid, b'')
+        self.assertEqual(bindpwd, b'')
 
     def test_delete_authentication(self):
         self._addRecord('cn=foo,dc=localhost')
@@ -42,13 +41,13 @@ class ConnectionDeleteTests(LDAPConnectionTests):
         connection = conn._getConnection()
         binduid, bindpwd = connection._last_bind[1]
         self.assertEqual(binduid, bind_dn_serverencoded)
-        self.assertEqual(bindpwd, 'foo')
+        self.assertEqual(bindpwd, b'foo')
 
     def test_delete(self):
         self._addRecord('cn=foo,dc=localhost')
         conn = self._makeSimple()
         results = conn.search('dc=localhost', '(cn=foo)')
-        self.assertEqual(results['results'], [{'dn': 'cn=foo'}])
+        self.assertEqual(results['results'], [{'dn': b'cn=foo'}])
 
         conn.delete('cn=foo,dc=localhost')
         results = conn.search('dc=localhost', '(cn=foo)')
@@ -67,4 +66,4 @@ class ConnectionDeleteTests(LDAPConnectionTests):
                                                   exc_arg)
         conn.delete('cn=foo,dc=localhost')
         self.assertEqual(ldap_connection.conn_string, 'ldap://otherhost:1389')
-        self.assertEqual(ldap_connection.args, ('cn=foo,dc=localhost',))
+        self.assertEqual(ldap_connection.args, (b'cn=foo,dc=localhost',))
