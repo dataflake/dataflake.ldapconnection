@@ -22,9 +22,9 @@ class ConnectionServerTests(LDAPConnectionTests):
 
     def test_add_via_constructor(self):
         conn = self._makeSimple()
-        self.assertEquals(len(conn.servers.values()), 1)
+        self.assertEqual(len(conn.servers.values()), 1)
         server = list(conn.servers.values())[0]
-        self.assertEquals(server['url'], 'ldap://host:636')
+        self.assertEqual(server['url'], 'ldap://host:636')
         self.assertEqual(server['conn_timeout'], -1)
         self.assertEqual(server['op_timeout'], -1)
 
@@ -63,9 +63,9 @@ class ConnectionServerTests(LDAPConnectionTests):
 
         conn.addServer(host, port, protocol, conn_timeout=10, op_timeout=15)
 
-        self.assertEquals(len(conn.servers.values()), 1)
+        self.assertEqual(len(conn.servers.values()), 1)
         server = list(conn.servers.values())[0]
-        self.assertEquals(server['url'], 'ldap://host:636')
+        self.assertEqual(server['url'], 'ldap://host:636')
         self.assertEqual(server['conn_timeout'], 10)
         self.assertEqual(server['op_timeout'], 15)
 
@@ -78,15 +78,15 @@ class ConnectionServerTests(LDAPConnectionTests):
 
         conn.removeServer(host, port, protocol)
 
-        self.assertEquals(len(conn.servers.values()), 0)
+        self.assertEqual(len(conn.servers.values()), 0)
 
     def test_remove_server_nonexisting(self):
         conn = self._makeSimple()
 
         conn.removeServer('nonexisting', 389, 'ldap')
 
-        self.assertEquals(len(conn.servers.values()), 1)
+        self.assertEqual(len(conn.servers.values()), 1)
         server = list(conn.servers.values())[0]
-        self.assertEquals(server['url'], 'ldap://host:636')
+        self.assertEqual(server['url'], 'ldap://host:636')
         self.assertEqual(server['conn_timeout'], -1)
         self.assertEqual(server['op_timeout'], -1)

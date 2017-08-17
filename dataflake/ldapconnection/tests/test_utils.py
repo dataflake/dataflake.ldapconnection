@@ -24,6 +24,6 @@ class UtilsTest(unittest.TestCase):
         # http://www.dataflake.org/tracker/issue_00623
         dn = 'cn="Joe Miller, Sr.", ou="odds+sods <1>", dc="host;new"'
         dn_clean = b'cn=Joe Miller\\, Sr.,ou=odds\\+sods \\<1\\>,dc=host\\;new'
-        self.assertEquals(escape_dn(dn), dn_clean)
+        self.assertEqual(escape_dn(dn), dn_clean)
 
-        self.assertEquals(escape_dn(None), None)
+        self.assertEqual(escape_dn(None), None)

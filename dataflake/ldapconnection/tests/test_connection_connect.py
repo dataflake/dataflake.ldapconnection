@@ -73,7 +73,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
     def test_connect_ldap_starttls(self):
         conn = self._makeOne('host', 636, 'ldaptls', self._factory)
         connection = conn.connect()
-        self.failUnless(connection.start_tls_called)
+        self.assertTrue(connection.start_tls_called)
 
     def test_connect_noserver_raises(self):
         conn = self._makeSimple()
@@ -103,7 +103,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 1)
 
         connection = conn._getConnection()
-        self.assertNotEquals(connection, None)
+        self.assertNotEqual(connection, None)
         self.assertEqual(connection._last_bind[1],
                          (b'cn=foo,dc=localhost', b'pass'))
 
@@ -121,7 +121,7 @@ class ConnectionConnectTests(LDAPConnectionTests):
         self.assertEqual(response['size'], 1)
 
         connection = conn._getConnection()
-        self.assertNotEquals(connection, None)
+        self.assertNotEqual(connection, None)
         self.assertEqual(connection._last_bind[1],
                          (b'cn=foo,dc=localhost', b'pass'))
 
