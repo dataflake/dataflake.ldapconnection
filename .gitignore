@@ -13,6 +13,7 @@ coverage.xml
 .tox/
 bin/
 build/
+cover/
 eggs/
 develop-eggs/
 dist/
