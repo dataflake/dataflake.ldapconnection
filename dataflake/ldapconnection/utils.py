@@ -34,9 +34,20 @@ def escape_dn(dn, encoding='UTF-8'):
     return escaped
 
 def dn2str(dn_parts, encoding='UTF-8'):
-    dn_str = ldap.dn.dn2str(dn_parts)
-    
-    if isinstance(dn_str, six.text_type):
-        dn_str = dn_str.encode(encoding)
+    """ Build a DN string from a parts structure
+    """
+    dn_list = []
 
-    return dn_str
+    for dn_part in dn_parts:
+        key = dn_part[0][0]
+        value = dn_part[0][1]
+
+        if not isinstance(key, six.binary_type):
+            key = key.encode(encoding)
+
+        if not isinstance(value, six.binary_type):
+            value = value.encode(encoding)
+
+        dn_list.append(b'%s=%s' % (key, value))
+
+    return b','.join(dn_list)

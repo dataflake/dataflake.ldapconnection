@@ -322,14 +322,22 @@ class LDAPConnection(object):
         cur_rec = res['results'][0]
         mod_list = []
 
-        for key, values in attrs.items():
+        for key, values in list(attrs.items()):
 
             if key.endswith(';binary'):
                 key = key[:-7]
-            elif isinstance(values, six.string_types):
-                values = [self._encode_incoming(x) for x in values.split(';')]
+                is_binary = True
             else:
-                values = [self._encode_incoming(x) for x in values]
+                is_binary = False
+
+            if not isinstance(key, six.binary_type):
+                key = self._encode_incoming(key)
+
+            if not is_binary:
+                if isinstance(values, six.string_types):
+                    values = [self._encode_incoming(x) for x in values.split(';')]
+                else:
+                    values = [self._encode_incoming(x) for x in values]
 
             if isinstance(key, six.text_type):
                 key = self._encode_incoming(key)
@@ -351,6 +359,8 @@ class LDAPConnection(object):
             else:
                 mod_list.append((mod_type, key, values))
 
+            attrs[key] = values
+
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
@@ -359,7 +369,9 @@ class LDAPConnection(object):
             for dn_part in dn_parts:
                 for (attr_name, attr_val, flag) in dn_part:
                     if isinstance(attr_name, six.text_type):
-                        attr_name = attr_name.encode('UTF-8')
+                        attr_name = self._encode_incoming(attr_name)
+                    if isinstance(attr_val, six.text_type):
+                        attr_val = self._encode_incoming(attr_val)
                     clean_dn_parts.append([(attr_name, attr_val, flag)])
 
             rdn_attr = clean_dn_parts[0][0][0]
@@ -373,10 +385,10 @@ class LDAPConnection(object):
                 if rdn_value != cur_rec.get(rdn_attr)[0]:
                     clean_dn_parts[0] = [(rdn_attr, rdn_value, 1)]
                     dn_parts[0] = [(rdn_attr, raw_rdn[0], 1)]
-                    raw_utf8_rdn = rdn_attr + '=' + rdn_value
+                    raw_utf8_rdn = rdn_attr + b'=' + rdn_value
                     new_rdn = escape_dn(raw_utf8_rdn, self.ldap_encoding)
                     connection.modrdn_s(dn, new_rdn)
-                    dn = dn2str(dn_parts, self.ldap_encoding)
+                    dn = dn2str(clean_dn_parts)
 
             if mod_list:
                 connection.modify_s(dn, mod_list)

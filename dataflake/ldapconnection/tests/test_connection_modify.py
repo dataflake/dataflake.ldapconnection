@@ -149,9 +149,9 @@ class ConnectionModifyTests(LDAPConnectionTests):
     def test_modify_binary(self):
         conn = self._makeSimple()
         conn.insert('dc=localhost', 'cn=foo', attrs={'objectguid': 'a'})
-        conn.modify('cn=foo,dc=localhost', attrs={'objectguid;binary': u'y'})
+        conn.modify('cn=foo,dc=localhost', attrs={'objectguid;binary': 'y'})
         rec = conn.search('dc=localhost', fltr='(cn=foo)')['results'][0]
-        self.assertEqual(rec[b'objectguid'], u'y')
+        self.assertEqual(rec[b'objectguid'], 'y')
 
     def test_modify_modrdn(self):
         conn = self._makeSimple()
@@ -159,6 +159,7 @@ class ConnectionModifyTests(LDAPConnectionTests):
         conn.modify('cn=foo,dc=localhost', attrs={'cn': 'bar'})
         rec = conn.search('dc=localhost', fltr='(cn=bar)')['results'][0]
         self.assertEqual(rec[b'cn'], [b'bar'])
+        self.assertEqual(rec['dn'], b'cn=bar,dc=localhost')
 
     def test_modify_referral(self):
         import ldap
