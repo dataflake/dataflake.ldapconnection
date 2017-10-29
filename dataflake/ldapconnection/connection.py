@@ -17,8 +17,8 @@ deletions or modifications.
 """
 
 import ldap
-from ldap import dn as ldapdn
-from ldap import ldapobject
+from ldap.dn import str2dn
+from ldap.ldapobject import ReconnectLDAPObject
 import ldapurl
 import logging
 from random import random
@@ -46,7 +46,7 @@ class LDAPConnection(object):
     """
 
     def __init__(self, host='', port=389, protocol='ldap',
-                 c_factory=ldapobject.ReconnectLDAPObject, rdn_attr='',
+                 c_factory=ReconnectLDAPObject, rdn_attr='',
                  bind_dn=b'', bind_pwd='', read_only=False, conn_timeout=-1,
                  op_timeout=-1, logger=None, ldap_encoding='UTF-8',
                  api_encoding='UTF-8'):
@@ -364,7 +364,7 @@ class LDAPConnection(object):
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
-            dn_parts = ldapdn.str2dn(dn)
+            dn_parts = str2dn(dn)
             clean_dn_parts = []
             for dn_part in dn_parts:
                 for (attr_name, attr_val, flag) in dn_part:
