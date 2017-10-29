@@ -17,7 +17,7 @@ deletions or modifications.
 """
 
 import ldap
-from ldap.dn import str2dn
+from ldap import dn as ldapdn
 from ldap import ldapobject
 import ldapurl
 import logging
@@ -364,7 +364,7 @@ class LDAPConnection(object):
         try:
             connection = self.connect(bind_dn=bind_dn, bind_pwd=bind_pwd)
 
-            dn_parts = str2dn(dn)
+            dn_parts = ldapdn.str2dn(dn)
             clean_dn_parts = []
             for dn_part in dn_parts:
                 for (attr_name, attr_val, flag) in dn_part:
