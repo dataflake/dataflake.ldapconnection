@@ -10,13 +10,10 @@ more than one LDAP server.
 
 Documentation
 =============
-Full documentation for the last released version is at
-http://packages.python.org/dataflake.ldapconnection. For 
-documentation matching the current SVN trunk please visit 
-http://docs.dataflake.org/dataflake.ldapconnection.
-
+Full documentation is available at
+http://dataflakeldapconnection.readthedocs.io
 
 Bug tracker
 ===========
 A bug tracker is available at
-https://bugs.launchpad.net/dataflake.ldapconnection
+https://github.com/dataflake/dataflake.ldapconnection/issues
