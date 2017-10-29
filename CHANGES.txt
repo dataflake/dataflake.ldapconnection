@@ -1,7 +1,7 @@
 Change log
 ==========
 
-2.0 (unreleased)
+2.0 (2017-10-29)
 ----------------
 - Python 3 compatibility
 - Move from ``python-ldap`` to ``pyldap`` for Python 3 compatibility
