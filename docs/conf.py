@@ -28,16 +28,19 @@ parent_dir = os.path.abspath(parent)
 with open(os.path.join(parent_dir, 'version.txt'), 'r') as version_file:
     pkg_version = version_file.read().strip()
 
-import sys
-from unittest.mock import MagicMock
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return MagicMock()
+try:
+    # This is for ReadTheDocs only where the LDAP libraries do not exist
+    from mock import Mock as MagicMock
+    class Mock(MagicMock):
+        @classmethod
+        def __getattr__(cls, name):
+                return MagicMock()
 
-MOCK_MODULES = ['ldap']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+    MOCK_MODULES = ['ldap']
+    sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+except ImportError:
+    pass
 
 
 # -- General configuration ------------------------------------------------
