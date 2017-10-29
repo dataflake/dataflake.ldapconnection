@@ -85,8 +85,8 @@ class LDAPConnection(object):
             protocol = 'ldap'
             start_tls = True
         hp = '%s:%s' % (host, port)
-        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport=hp)
-        server_url = l.initializeUrl()
+        conn = ldapurl.LDAPUrl(urlscheme=protocol, hostport=hp)
+        server_url = conn.initializeUrl()
         self.servers[server_url] = {'url': server_url,
                                     'conn_timeout': conn_timeout,
                                     'op_timeout': op_timeout,
@@ -96,8 +96,8 @@ class LDAPConnection(object):
         """ Remove a server definition from the list of servers used
         """
         hp = '%s:%s' % (host, port)
-        l = ldapurl.LDAPUrl(urlscheme=protocol, hostport=hp)
-        server_url = l.initializeUrl()
+        conn = ldapurl.LDAPUrl(urlscheme=protocol, hostport=hp)
+        server_url = conn.initializeUrl()
         if server_url in self.servers.keys():
             del self.servers[server_url]
 
