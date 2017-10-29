@@ -28,6 +28,17 @@ parent_dir = os.path.abspath(parent)
 with open(os.path.join(parent_dir, 'version.txt'), 'r') as version_file:
     pkg_version = version_file.read().strip()
 
+import sys
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return MagicMock()
+
+MOCK_MODULES = ['pyldap']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 
 # -- General configuration ------------------------------------------------
 
