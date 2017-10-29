@@ -37,7 +37,7 @@ try:
         def __getattr__(cls, name):
                 return MagicMock()
 
-    MOCK_MODULES = ['ldap']
+    MOCK_MODULES = ['ldap', 'ldap.dn']
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 except ImportError:
     pass
