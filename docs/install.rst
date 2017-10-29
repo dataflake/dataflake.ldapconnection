@@ -24,4 +24,4 @@ If you use :mod:`zc.buildout` you can add :mod:`dataflake.fakeldap`
 to the necessary ``eggs`` section to have it pulled in automatically.
 
 When you ``easy_install``  or ``pip`` :mod:`dataflake.fakeldap`, the
-:term:`python-ldap` libraries are installed if they are not present.
+:term:`pyldap` libraries are installed if they are not present.

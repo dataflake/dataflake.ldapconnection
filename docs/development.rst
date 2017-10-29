@@ -9,17 +9,17 @@ repository. To check out the trunk:
 
 .. code-block:: sh
 
-  $ git clone https://git.dataflake.org/git/dataflake.ldapconnection
+  $ git clone https://github.com/dataflake/dataflake.ldapconnection.git
 
 You can also browse the code online at 
-http://git.dataflake.org/cgit/dataflake.ldapconnection
+https://github.com/dataflake/dataflake.ldapconnection
 
 
 Bug tracker
 ===========
 For bug reports, suggestions or questions please use the 
-Launchpad bug tracker at 
-https://bugs.launchpad.net/dataflake.ldapconnection .
+GitHub issue tracker at 
+https://github.com/dataflake/dataflake.ldapconnection/issues.
 
 
 Running the tests in a ``virtualenv``
@@ -145,11 +145,9 @@ its code snippets:
 
 .. code-block:: sh
 
-    $ bin/docbuilder.sh
-    rm -rf _build/*
-    sphinx-build -b doctest -d _build/doctrees   . _build/doctest
-    Making output directory...
-    Running Sphinx v1.1.3
+    $ cd docs
+    $ make doctest
+    Running Sphinx v1.6.5
     ...
     running tests...
 
@@ -159,27 +157,8 @@ its code snippets:
         0 failures in tests
         0 failures in setup code
     build succeeded.
-    Testing of doctests in the sources finished, look at the  results in \
+    Testing of doctests sn the sources finished, look at the  results in \
          .../docs/_build/doctest/output.txt.
-    .../bin/sphinx-build -b html -d .../docs/_build/doctrees   \
-         .../docs .../docs/_build/html
-    ...
-    build succeeded.
-
-    Build finished. The HTML pages are in .../docs/_build/html.
-
-To build the documentation as PDF you first need to ensure your system 
-has a latex2pdf binary installed.
-
-.. code-block:: sh
-
-    $ bin/pdfbuilder.sh
-    sphinx-build -b latex -d _build/doctrees   . _build/latex
-    Making output directory...
-    Running Sphinx v1.1.3
-    ...
-    Output written on dataflake.ldapconnection.pdf (23 pages, 128015 bytes).
-    Transcript written on dataflake.ldapconnection.log.
 
 
 Making a release
@@ -188,26 +167,10 @@ These instructions assume that you have a development sandbox set
 up using :mod:`zc.buildout` as the scripts used here are generated 
 by the buildout.
 
-The first thing to do when making a release is to check that the ReST
-to be uploaded to PyPI is valid:
-
-.. code-block:: sh
-
-  $ bin/docpy setup.py --long-description | bin/rst2 html \
-    --link-stylesheet \
-    --stylesheet=http://www.python.org/styles/styles.css > desc.html
-
-Once you're certain everything is as it should be, the following will
-build the distribution, upload it to PyPI, register the metadata with
-PyPI and upload the Sphinx documentation to PyPI:
-
 .. code-block:: sh
 
   $ bin/buildout -o
-  $ bin/docbuilder.sh
-  $ bin/pdfbuilder.sh
-  $ bin/docpy setup.py sdist register upload upload_sphinx \
-        --upload-dir=docs/_build/html
+  $ python setup.py sdist bdist_wheel upload --sign
 
 The ``bin/buildout`` step will make sure the correct package information 
 is used.

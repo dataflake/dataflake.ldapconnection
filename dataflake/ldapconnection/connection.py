@@ -104,7 +104,7 @@ class LDAPConnection(object):
     def connect(self, bind_dn=None, bind_pwd=None):
         """ initialize an ldap server connection
 
-        This method returns an instance of the underlying `python-ldap`
+        This method returns an instance of the underlying `pyldap`
         connection class. It does not need to be called explicitly, all
         other operations call it implicitly.
         """

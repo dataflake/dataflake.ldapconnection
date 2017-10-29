@@ -4,7 +4,7 @@
 Documentation
 =============
 :mod:`dataflake.ldapconnection` provides an abstraction layer on top 
-of :term:`python-ldap`. It offers a connection object with simplified 
+of :term:`pyldap`. It offers a connection object with simplified 
 methods for inserting, modifying, searching and deleting records in the 
 LDAP directory tree. Failover/redundancy can be achieved by supplying 
 connection data for more than one LDAP server.

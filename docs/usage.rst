@@ -2,7 +2,7 @@ Using dataflake.ldapconnection
 ==============================
 
 :mod:`dataflake.ldapconnection` provides an abstraction layer on 
-top of :term:`python-ldap`. It offers a connection object with 
+top of :term:`pyldap`. It offers a connection object with 
 simplified methods for inserting, modifying, searching and deleting 
 records in the LDAP directory tree. Failover/redundancy can be 
 achieved by supplying connection data for more than one LDAP server.
@@ -79,5 +79,4 @@ instance handles all string encoding transparently.
 By default, instances use UTF-8 as ``ldap_encoding`` and ISO-8859-1 
 (Latin-1) as ``api_encoding``. You can assign any valid Python codec 
 name to these attributes. Assigning an empty value or None means that 
-unencoded unicode strings are used.
-
+unencoded unicode strings are used under Python 2.

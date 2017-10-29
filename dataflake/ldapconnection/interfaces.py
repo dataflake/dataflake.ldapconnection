@@ -66,7 +66,7 @@ class ILDAPConnection(Interface):
         is forced every time the method can be used to re-bind the cached
         connection with new credentials.
 
-        This method returns an instance of the underlying `python-ldap`
+        This method returns an instance of the underlying `pyldap`
         connection class. It does not need to be called explicitly, all
         other operations call it implicitly.
 
@@ -86,7 +86,7 @@ class ILDAPConnection(Interface):
 
         The search `base` is the point in the tree to search from. `scope`
         defines how to search and must be one of the scopes defined by the
-        `python-ldap` module (`ldap.SCOPE_BASE`, `ldap.SCOPE_ONELEVEL` or
+        `pyldap` module (`ldap.SCOPE_BASE`, `ldap.SCOPE_ONELEVEL` or
         `ldap.SCOPE_SUBTREE`). By default, `ldap.SCOPE_SUBTREE` is used.
         What to search for is described by the `filter` argument, which
         must be a valid LDAP search filter string. If only certain record
@@ -138,7 +138,7 @@ class ILDAPConnection(Interface):
         """ Modify the record specified by the given DN
 
         `mod_type` is one of the LDAP modification types as declared by
-        the `python-ldap`-module, such as `ldap.MOD_ADD`,
+        the `pyldap`-module, such as `ldap.MOD_ADD`,
         PUrl(urlscheme=protocol, hostport=hostport)
         provided, the modification type is guessed by comparing the
         current record with the `attrs` mapping passed in.
