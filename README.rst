@@ -1,3 +1,18 @@
+.. image:: https://api.travis-ci.org/dataflake/dataflake.ldapconnection.svg?branch=master
+   :target: https://travis-ci.org/dataflake/dataflake.ldapconnection
+
+.. image:: https://readthedocs.org/projects/dataflakeldapconnection/badge/?version=latest
+   :target: https://dataflakeldapconnection.readthedocs.io
+   :alt: Documentation Status
+
+.. image:: https://img.shields.io/pypi/v/dataflake.ldapconnection.svg
+   :target: https://pypi.python.org/pypi/dataflake.ldapconnection
+   :alt: PyPI
+
+.. image:: https://img.shields.io/pypi/pyversions/dataflake.ldapconnection.svg
+   :target: https://pypi.python.org/pypi/dataflake.ldapconnection
+   :alt: Python versions
+
 ==========================
  dataflake.ldapconnection
 ==========================
